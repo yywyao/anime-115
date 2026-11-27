@@ -1,0 +1,299 @@
+"""Shared, durable Mikan-page and RSS following pipeline."""
+import hashlib,html,json,re,secrets,threading,time,urllib.parse
+import xml.etree.ElementTree as ET
+from .errors import AppError,ProviderError
+from .torrent import torrent_magnet
+from .workflow import normalize_magnet
+from . import releases
+
+class RSS:
+    def __init__(self,store,config,catalog,workflow):
+        self.store,self.config,self.catalog,self.workflow=store,config,catalog,workflow
+        self.lock=threading.RLock();self.stop_event=threading.Event();self.worker=None
+
+    def source(self,body):
+        raw=str(body.get('rss_url') or '').strip();bid=str(body.get('bangumi_id') or '');sg=str(body.get('subgroup_id') or '0')
+        if raw:
+            try:p=urllib.parse.urlsplit(raw);port=p.port
+            except ValueError:raise AppError('INVALID_FEED','RSS 链接无效')
+            origin=urllib.parse.urlsplit(self.config.mikan_url)
+            if p.scheme not in {'http','https'} or p.username or p.password or p.fragment or p.hostname not in {origin.hostname,'mikanani.me','mikanime.tv'} or (port and p.netloc!=origin.netloc):raise AppError('INVALID_FEED','请使用蜜柑 RSS 链接')
+            q=urllib.parse.parse_qs(p.query,keep_blank_values=True)
+            if any(len(v)!=1 for v in q.values()):raise AppError('INVALID_FEED','RSS 参数无效')
+            if p.path=='/RSS/Bangumi' and not set(q)-{'bangumiId','subgroupid'}:
+                chosen=q.get('bangumiId',[''])[0]
+                if bid and bid!=chosen:raise AppError('INVALID_FEED','RSS 与作品不一致')
+                bid=chosen;sg=q.get('subgroupid',['0'])[0]
+            elif p.path=='/RSS/MyBangumi' and set(q)=={'token'} and re.fullmatch(r'[A-Za-z0-9_-]{16,256}',q['token'][0]):
+                path=p.path+'?'+urllib.parse.urlencode({'token':q['token'][0]})
+                return 'feed:'+hashlib.sha256(path.encode()).hexdigest()[:24],'0','personal',path
+            else:raise AppError('INVALID_FEED','请使用作品、字幕组或个人 RSS 链接')
+        if not bid.isdigit() or not sg.isdigit():raise AppError('INVALID_FEED','请选择作品或填写 RSS 链接')
+        return bid,sg,'bangumi','/RSS/Bangumi?'+urllib.parse.urlencode({'bangumiId':bid,**({'subgroupid':sg} if sg!='0' else {})})
+
+    def entries(self,bid,sg,path=None):
+        raw=self.catalog.fetch(path,binary=True) if path else self.catalog.rss_bytes(bid,sg)
+        if len(raw)>4*1024*1024 or b'<!DOCTYPE' in raw.upper() or b'<!ENTITY' in raw.upper():raise ProviderError('RSS_INVALID','RSS 内容无效')
+        try:root=ET.fromstring(raw)
+        except ET.ParseError:raise ProviderError('RSS_INVALID','RSS 格式不正确')
+        out=[];origin=urllib.parse.urlsplit(self.config.mikan_url)
+        for item in root.findall('.//item')[:1000]:
+            title=html.unescape(item.findtext('title') or 'RSS 资源')[:300];magnet='';torrent='';episode=''
+            for node in item.iter():
+                text=(node.text or '').strip();url=node.attrib.get('url','')
+                if text.startswith('magnet:?'):magnet=text
+                if url.startswith('magnet:?'):magnet=url
+                elif url:
+                    p=urllib.parse.urlsplit(url)
+                    if p.netloc==origin.netloc and re.fullmatch(r'/Download/[A-Za-z0-9/_-]+\.torrent',p.path):torrent=p.path
+            link=urllib.parse.urlsplit(item.findtext('link') or '')
+            if (not link.netloc or link.netloc==origin.netloc) and re.fullmatch(r'/Home/Episode/[a-fA-F0-9]{40}',link.path):episode=link.path
+            guid=item.findtext('guid') or magnet or torrent
+            if not guid or not (magnet or torrent):continue
+            identity=guid
+            if magnet:
+                try:identity=normalize_magnet(magnet)[0]
+                except AppError:continue
+            elif torrent:identity=torrent.casefold()
+            release=releases.parse(title,sg if str(sg)!='0' else '')
+            resource_hash=episode.rsplit('/',1)[-1] if episode else identity if re.fullmatch('[a-f0-9]{40}',identity) else ''
+            out.append({'key':hashlib.sha256(identity.encode()).hexdigest(),'legacy_key':hashlib.sha256(guid.encode()).hexdigest(),'resource_hash':resource_hash,'title':title,'magnet':magnet,'torrent':torrent,'episode_path':episode,'bangumi_id':bid if str(bid).isdigit() else '', 'release':release})
+        return out
+
+    def cached_source(self,resource_hash,bid='',group_id=''):
+        rows=self.store.all('SELECT * FROM release_sources WHERE resource_hash=?',(resource_hash,))
+        rows=[r for r in rows if (not bid or r['bangumi_id']==bid) and (not group_id or r['group_id']==group_id)]
+        return rows[0] if len(rows)==1 else None
+
+    def identify(self,item):
+        out={**item,'release':dict(item['release'])};r=out['release'];bid=out.get('bangumi_id','')
+        source=self.cached_source(out.get('resource_hash',''),bid,r['group_id']) if bid or not out.get('episode_path') else None
+        if source:
+            if bid and bid!=source['bangumi_id']:raise ProviderError('RSS_WORK_MISMATCH','资源作品标识冲突')
+            bid=out['bangumi_id']=source['bangumi_id'];r['group_id']=source['group_id']
+        if bid and not r['group_id'] and r['group']:
+            matches=self.store.all('SELECT group_id FROM work_groups WHERE bangumi_id=? AND name=?',(bid,r['group']))
+            if len(matches)==1:r['group_id']=matches[0]['group_id']
+        if out.get('episode_path') and (not bid or not r['group_id']):
+            page=self.catalog.fetch(out['episode_path'],600)
+            bids=set(re.findall(r'/Home/Bangumi/(\d+)',page));groups=set(re.findall(r'/Home/PublishGroup/(\d+)',page))
+            if len(bids)==1:
+                found=next(iter(bids))
+                if bid and bid!=found:raise ProviderError('RSS_WORK_MISMATCH','RSS 作品标识冲突')
+                bid=found;out['bangumi_id']=found
+            if bid and not r['group_id']:
+                # PublishGroup ids and RSS subgroup ids are distinct namespaces.
+                self.catalog.mikan_detail(bid)
+                source=self.cached_source(out.get('resource_hash',''),bid)
+                if source and source['bangumi_id']==bid:r['group_id']=source['group_id']
+                elif len(groups)==1:
+                    mapped=self.store.all('SELECT group_id FROM group_publishers WHERE bangumi_id=? AND publisher_id=?',(bid,next(iter(groups))))
+                    if len(mapped)==1:r['group_id']=mapped[0]['group_id']
+        if bid and not r['group_id'] and r['group']:
+            matches=self.store.all('SELECT group_id FROM work_groups WHERE bangumi_id=? AND name=?',(bid,r['group']))
+            if len(matches)==1:r['group_id']=matches[0]['group_id']
+        if bid and r['group_id']:
+            row=self.store.one('SELECT name FROM work_groups WHERE bangumi_id=? AND group_id=?',(bid,r['group_id']))
+            if row:r['group']=row['name']
+        if bid:
+            rows=self.catalog.seed_rows('WHERE mikan_id=?',(bid,),1)
+            if rows and (rows[0].get('tmdb_mapping') or {}).get('status')=='linked' and rows[0].get('tmdb_season') is not None:out['identity_season']=rows[0]['tmdb_season']
+        return out
+
+    def read(self,sub):
+        path=self.store.decrypt(sub['source_encrypted']) if sub.get('source_encrypted') else None
+        return self.entries(sub['bangumi_id'],sub['subgroup_id'],path)
+
+    def options(self,ident,bid=None):
+        work=self.catalog.work(ident) if ident else {};bid=str(bid or work.get('mikan_id') or work.get('bangumiId') or '')
+        if not bid.isdigit():return {'source_required':True,'work':work,'groups':[],'versions':releases.VERSIONS}
+        detail=self.catalog.mikan_detail(bid);groups=[];versions=set()
+        for g in detail['subgroups']:
+            labels=sorted({releases.parse(r['title'],g['subgroupId'],g['subgroupName'])['version'] for r in g['resources']})
+            groups.append({'id':g['subgroupId'],'name':g['subgroupName'],'versions':labels,'resources':g['resourceCount']});versions.update(labels)
+        return {'source_required':False,'bangumi_id':bid,'work':{**work,'title':work.get('title') or detail['title']},'groups':groups,'versions':releases.VERSIONS,'observed_versions':sorted(versions)}
+
+    def prepare(self,body):
+        if set(body)-{'rss_url','bangumi_id','subgroup_id','work_id','title','rules','include_existing'}:raise AppError('INVALID_FEED','追新包含不支持的字段')
+        bid,sg,kind,path=self.source(body);rule=releases.rules(body.get('rules'))
+        if sg!='0' and not rule['group_ids']:rule['group_ids']=[sg]
+        work_id=str(body.get('work_id') or (bid if bid.isdigit() else ''))[:150] if kind=='bangumi' else ''
+        if work_id:
+            work=self.catalog.work(work_id)
+            if work.get('mikan_id') and str(work['mikan_id'])!=bid:raise AppError('FEED_WORK_MISMATCH','作品与 RSS 不一致')
+        return {'bangumi_id':bid,'subgroup_id':sg,'source_kind':kind,'source_encrypted':self.store.encrypt(path),'rules_json':json.dumps(rule,ensure_ascii=False),'work_id':work_id,'title':str(body.get('title') or ('RSS 追新' if kind=='personal' else '作品 '+bid))[:300]}
+
+    def create(self,user,body):
+        prepared=self.prepare(body);items=self.read(prepared);sid=secrets.token_hex(16);now=time.time()
+        with self.store.transaction() as c:
+            old=c.execute('SELECT * FROM subscriptions WHERE user_id=? AND bangumi_id=? AND subgroup_id=? AND removed=0',(user['id'],prepared['bangumi_id'],prepared['subgroup_id'])).fetchone()
+            if old:return {'id':old['id'],'existing':True}
+            archived=c.execute('SELECT id FROM subscriptions WHERE user_id=? AND bangumi_id=? AND subgroup_id=?',(user['id'],prepared['bangumi_id'],prepared['subgroup_id'])).fetchone()
+            if archived:
+                sid=archived['id'];c.execute('UPDATE subscriptions SET enabled=1,removed=0,revision=revision+1,work_id=?,title=?,rules_json=?,source_encrypted=?,source_kind=? WHERE id=?',(prepared['work_id'],prepared['title'],prepared['rules_json'],prepared['source_encrypted'],prepared['source_kind'],sid))
+            else:c.execute('INSERT INTO subscriptions(id,user_id,work_id,bangumi_id,subgroup_id,title,initialized,last_polled,rules_json,source_encrypted,source_kind) VALUES(?,?,?,?,?,?,1,?,?,?,?)',(sid,user['id'],prepared['work_id'],prepared['bangumi_id'],prepared['subgroup_id'],prepared['title'],now,prepared['rules_json'],prepared['source_encrypted'],prepared['source_kind']))
+            if body.get('include_existing') is not True:
+                for entry in items:
+                    c.execute('INSERT OR IGNORE INTO subscription_items VALUES(?,?,?)',(sid,entry['key'],'IGNORED_BASELINE'))
+                    c.execute('INSERT OR IGNORE INTO subscription_releases VALUES(?,?,?,?,?,?,?,?)',(sid,entry['key'],json.dumps(entry,ensure_ascii=False),'BASELINE','创建前资源',None,now,now))
+        return {'id':sid,'existing':False,'baseline_items':0 if body.get('include_existing') is True else len(items),'downloads_history':body.get('include_existing') is True}
+
+    def authorize(self,user,sid):
+        row=self.store.one('SELECT * FROM subscriptions WHERE id=? AND removed=0',(sid,))
+        if not row or (row['user_id']!=user['id'] and not user['is_admin']):raise AppError('SUBSCRIPTION_NOT_FOUND','追新不存在',404)
+        return row
+
+    def public(self,row):
+        out={k:row[k] for k in ['id','work_id','bangumi_id','subgroup_id','title','enabled','last_polled','last_error','source_kind','revision','user_id']}
+        out['rules']=releases.rules(json.loads(row['rules_json']));out['username']=row.get('username','')
+        out['counts']={r['status']:r['n'] for r in self.store.all('SELECT status,count(*) n FROM subscription_releases WHERE subscription_id=? GROUP BY status',(row['id'],))}
+        return out
+
+    def list(self,user,all_users=False):
+        where='' if all_users and user['is_admin'] else ' AND s.user_id=?';args=() if not where else (user['id'],)
+        rows=self.store.all('SELECT s.*,u.username FROM subscriptions s JOIN users u ON u.id=s.user_id WHERE s.removed=0'+where+' ORDER BY s.rowid DESC',args)
+        return [self.public(row) for row in rows]
+
+    def settings(self):
+        binding=self.store.binding(False)
+        return {'paused':self.store.setting('rss_paused','0')=='1','interval_seconds':int(self.store.setting('rss_interval',self.config.rss_interval)),'connection_ready':bool(binding and binding['ready'])}
+
+    def configure(self,body):
+        if set(body)-{'paused','interval_seconds'}:raise AppError('INVALID_SETTINGS','设置无效')
+        if 'interval_seconds' in body:
+            n=body['interval_seconds']
+            if isinstance(n,bool) or not isinstance(n,int) or not 60<=n<=86400:raise AppError('INVALID_INTERVAL','检查间隔应为 60–86400 秒')
+            self.store.set_setting('rss_interval',n)
+        if 'paused' in body:
+            if not isinstance(body['paused'],bool):raise AppError('INVALID_SETTINGS','暂停设置无效')
+            self.store.set_setting('rss_paused','1' if body['paused'] else '0')
+        return self.settings()
+
+    def update(self,user,sid,body):
+        self.authorize(user,sid)
+        if set(body)-{'enabled','rules','title','remove'}:raise AppError('INVALID_RULES','修改包含不支持的字段')
+        values={}
+        if 'rules' in body:values['rules_json']=json.dumps(releases.rules(body['rules']),ensure_ascii=False)
+        if 'title' in body:values['title']=str(body['title'])[:300]
+        if 'enabled' in body:
+            if not isinstance(body['enabled'],bool):raise AppError('INVALID_RULES','开关无效')
+            values['enabled']=int(body['enabled'])
+        if body.get('remove') is True:values.update(enabled=0,removed=1)
+        if values:
+            with self.store.transaction() as c:
+                c.execute('UPDATE subscriptions SET '+','.join(k+'=?' for k in values)+',revision=revision+1 WHERE id=?',(*values.values(),sid))
+                if 'rules' in body:c.execute("UPDATE subscription_releases SET status='WAITING',reason='' WHERE subscription_id=? AND status IN ('FILTERED','DUPLICATE')",(sid,))
+        return {'id':sid,'enabled':bool(values.get('enabled',self.store.one('SELECT enabled FROM subscriptions WHERE id=?',(sid,))['enabled']))}
+
+    def toggle(self,user,sid,enabled):return self.update(user,sid,{'enabled':enabled})
+
+    def preview(self,user,body,sid=None):
+        sub=self.authorize(user,sid) if sid else self.prepare(body);rule=releases.rules(body.get('rules',json.loads(sub['rules_json'])));rows=[]
+        for item in self.read(sub)[:100]:
+            item=self.identify(item);reason=releases.admit(item,rule)
+            if any(not 0<=n<=9999 for n in releases.normalized_episodes(item['release'],rule)):reason='集号偏移无效'
+            if sub['source_kind']=='personal' and not item.get('bangumi_id'):reason='作品未确认'
+            prior=self.store.one('SELECT status FROM subscription_releases WHERE subscription_id=? AND item_key=?',(sid,item['key'])) if sid else None
+            rows.append({**item,'admitted':not reason,'reason':reason,'previous':prior['status'] if prior else ''})
+        rows.sort(key=lambda item:releases.priority(item,rule));seen=set()
+        for item in rows:
+            keys=releases.episode_keys(item,rule)
+            duplicate=any(k in seen or self.store.one('SELECT 1 n FROM subscription_claims WHERE user_id=? AND episode_key=?',(sub.get('user_id',user['id']),k)) for k in keys)
+            if item['admitted'] and duplicate:item.update(admitted=False,reason='重复剧集')
+            if item['admitted']:seen.update(keys)
+        return {'items':[{k:v for k,v in i.items() if k in {'key','title','release','admitted','reason','previous','bangumi_id'}} for i in rows],'dry_run':True}
+
+    def history(self,user,sid):
+        self.authorize(user,sid)
+        rows=self.store.all('SELECT payload,status,reason,transfer_id,updated_at FROM subscription_releases WHERE subscription_id=? ORDER BY updated_at DESC LIMIT 100',(sid,))
+        return {'items':[{'title':json.loads(r['payload'])['title'],'release':json.loads(r['payload'])['release'],**{k:r[k] for k in ['status','reason','transfer_id','updated_at']}} for r in rows]}
+
+    def decision(self,sid,key,status,reason='',transfer_id=None):
+        with self.store.transaction() as c:c.execute('UPDATE subscription_releases SET status=?,reason=?,transfer_id=?,updated_at=? WHERE subscription_id=? AND item_key=?',(status,reason,transfer_id,time.time(),sid,key))
+
+    def poll(self,sub):
+        with self.lock:
+            sub=self.store.one('SELECT * FROM subscriptions WHERE id=?',(sub['id'],))
+            if not sub or not sub['enabled'] or sub['removed'] or self.settings()['paused']:return
+            try:
+                items=self.read(sub);rule=releases.rules(json.loads(sub['rules_json']));now=time.time()
+                user=self.store.one('SELECT * FROM users WHERE id=? AND disabled=0',(sub['user_id'],))
+                if not user:return
+                with self.store.transaction() as c:
+                    for item in items:
+                        baseline=c.execute('SELECT transfer_id FROM subscription_items WHERE subscription_id=? AND item_key IN (?,?)',(sub['id'],item['key'],item['legacy_key'])).fetchone()
+                        if baseline and baseline['transfer_id'] not in ('PENDING',None):continue
+                        c.execute('INSERT OR IGNORE INTO subscription_releases VALUES(?,?,?,?,?,?,?,?)',(sub['id'],item['key'],json.dumps(item,ensure_ascii=False),'WAITING','',None,now,now))
+                pending=self.store.all("SELECT * FROM subscription_releases WHERE subscription_id=? AND status IN ('WAITING','ERROR','PENDING') ORDER BY first_seen LIMIT 500",(sub['id'],));candidates=[];first_seen={}
+                for row in pending:
+                    item=self.identify(json.loads(row['payload']));reason=releases.admit(item,rule)
+                    if any(not 0<=n<=9999 for n in releases.normalized_episodes(item['release'],rule)):reason='集号偏移无效'
+                    if reason:self.decision(sub['id'],item['key'],'FILTERED',reason);continue
+                    if not item.get('bangumi_id') and sub['source_kind']=='personal':self.decision(sub['id'],item['key'],'ERROR','作品未确认');continue
+                    candidates.append(item)
+                    for key in releases.episode_keys(item,rule):first_seen[key]=min(first_seen.get(key,now),row['first_seen'])
+                candidates=[item for item in candidates if all(now-first_seen[key]>=rule['wait_minutes']*60 for key in releases.episode_keys(item,rule))]
+                candidates.sort(key=lambda item:releases.priority(item,rule))
+                for item in candidates:
+                    if self.stop_event.is_set() or self.settings()['paused']:return
+                    keys=releases.episode_keys(item,rule)
+                    with self.store.transaction() as c:
+                        current=c.execute('SELECT enabled,removed,revision FROM subscriptions WHERE id=?',(sub['id'],)).fetchone()
+                        if not current or not current['enabled'] or current['removed'] or current['revision']!=sub['revision']:return
+                        claims=[c.execute('SELECT * FROM subscription_claims WHERE user_id=? AND episode_key=?',(user['id'],key)).fetchone() for key in keys]
+                        if any(r and (r['subscription_id']!=sub['id'] or r['item_key']!=item['key']) for r in claims):duplicate=True
+                        else:
+                            duplicate=False
+                            for key in keys:c.execute('INSERT OR IGNORE INTO subscription_claims VALUES(?,?,?,?,NULL)',(user['id'],key,sub['id'],item['key']))
+                    if duplicate:self.decision(sub['id'],item['key'],'DUPLICATE','重复剧集');continue
+                    self.decision(sub['id'],item['key'],'PENDING')
+                    try:
+                        magnet=item['magnet'] or torrent_magnet(self.catalog.fetch(item['torrent'],binary=True),item['title'])
+                        job=self.workflow.create(user,magnet,item['title'],sub['work_id'] or item['bangumi_id'],subscription_id=sub['id'],subscription_revision=sub['revision'])
+                        if job is None:return
+                        with self.store.transaction() as c:
+                            c.execute('INSERT OR REPLACE INTO subscription_items VALUES(?,?,?)',(sub['id'],item['key'],job['id']))
+                            c.execute('UPDATE subscription_claims SET transfer_id=? WHERE user_id=? AND subscription_id=? AND item_key=?',(job['id'],user['id'],sub['id'],item['key']))
+                            metadata={'release':item['release'],'rules':rule,'work_id':sub['work_id'] or item['bangumi_id'],'bangumi_id':item['bangumi_id']}
+                            c.execute('INSERT OR IGNORE INTO transfer_naming VALUES(?,?,?,?,?,?)',(job['id'],json.dumps(metadata,ensure_ascii=False),int(rule['rename']),'PENDING',None,time.time()))
+                        self.decision(sub['id'],item['key'],'TRANSFERRED','已创建转存',job['id'])
+                    except AppError as e:self.decision(sub['id'],item['key'],'ERROR',e.message)
+                with self.store.transaction() as c:c.execute('UPDATE subscriptions SET last_polled=?,last_error=NULL WHERE id=?',(time.time(),sub['id']))
+            except AppError as e:
+                with self.store.transaction() as c:c.execute('UPDATE subscriptions SET last_polled=?,last_error=? WHERE id=?',(time.time(),e.message,sub['id']))
+
+    def tick(self):
+        settings=self.settings()
+        if settings['paused'] or not settings['connection_ready']:return
+        for sub in self.store.all('SELECT * FROM subscriptions WHERE enabled=1 AND removed=0 AND last_polled<? ORDER BY last_polled LIMIT 5',(time.time()-settings['interval_seconds'],)):self.poll(sub)
+
+    def discover_groups(self):
+        if not self.config.catalog_auto_update:return
+        prior=self.store.one("SELECT * FROM catalog_sync WHERE key='group-discovery'")
+        if prior and prior['next_due']>time.time():return
+        works=sorted(self.catalog.all_works(),key=lambda w:int(w.get('year') or 0),reverse=True);done=set()
+        for work in works:
+            if self.stop_event.is_set() or len(done)>=3:break
+            bid=str(work.get('mikan_id') or '')
+            if not bid.isdigit() or bid in done:continue
+            checked=self.store.one('SELECT next_due FROM catalog_sync WHERE key=?',('group:'+bid,))
+            if checked and checked['next_due']>time.time():continue
+            done.add(bid)
+            try:
+                detail=self.catalog.mikan_detail(bid)
+                self.catalog.sync_result('group:'+bid,{'groups':detail['subgroupsCount']},3600 if int(work.get('year') or 0)>=self.catalog.current()['year']-1 else 7*86400)
+            except AppError:self.catalog.sync_result('group:'+bid,{'status':'retry'},86400,True)
+        self.catalog.sync_result('group-discovery',{'checked':len(done)},900)
+
+    def start(self):
+        if self.worker:return
+        def run():
+            while not self.stop_event.is_set():
+                try:self.tick();self.discover_groups()
+                except Exception:pass
+                self.stop_event.wait(5)
+        self.worker=threading.Thread(target=run,name='rss-following',daemon=True);self.worker.start()
+
+    def close(self):
+        self.stop_event.set()
+        if self.worker:self.worker.join(timeout=25)

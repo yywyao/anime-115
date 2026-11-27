@@ -1,0 +1,44 @@
+# Environment credentials and private runtime state
+.env
+.env.*
+!.env.example
+data/
+runtime/
+release/
+source-reference/
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.db-*
+secret.key
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+logs/
+cache/
+test-results/
+work-run-*.json
+coverage/
+
+# Public, reproducible catalog snapshot required by the app
+!seed/catalog.sqlite
+
+# Tooling and editor output
+__pycache__/
+*.py[cod]
+*.pyi
+*.egg-info/
+.venv/
+venv/
+frontend/node_modules/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage*
+.idea/
+.vscode/
+Thumbs.db
+Desktop.ini

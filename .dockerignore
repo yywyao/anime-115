@@ -1,0 +1,11 @@
+.env
+data
+runtime
+source-reference
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+release
+test-results
+.venv
+.git

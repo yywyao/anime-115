@@ -1,0 +1,5 @@
+# Set the public hostname and enable MIKAN_SECURE_COOKIE=1 before using HTTPS.
+anime.example.com {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8788
+}

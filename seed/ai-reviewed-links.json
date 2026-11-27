@@ -1,0 +1,9 @@
+{
+  "reviewed_on": "2026-11-27",
+  "method": "Current-assistant review of exact subject records, season, release period and original Mikan artwork path; not automatic title-similarity linking.",
+  "links": [
+    {"mikan_id":"2609","catalog_id":"public:bangumi:335036","expected_title":"英雄联盟：双城之战","artwork_period":"202111","evidence":["https://bangumi.tv/subject/335036","https://www.themoviedb.org/tv/94605"]},
+    {"mikan_id":"3213","catalog_id":"public:bangumi:443179","expected_title":"拾荒者统治","artwork_period":"202310","evidence":["https://bangumi.tv/subject/443179","https://www.themoviedb.org/tv/204154-scavengers-reign","https://press.wbd.com/na/property/scavengers-reign"]},
+    {"mikan_id":"1182","catalog_id":"catalog~97645","expected_title":"情热传说 the X 第二季","artwork_period":"201701","evidence":["https://bangumi.tv/subject/186184","https://www.themoviedb.org/tv/66991/season/2"]}
+  ]
+}

@@ -1,0 +1,257 @@
+{
+  "verified_utc": "2026-11-26T11:24:48.004343+00:00",
+  "success": true,
+  "checks": [
+    {
+      "step": "dialog",
+      "passed": true,
+      "width": 880,
+      "portal": true,
+      "keyboard_wrap": true,
+      "escape_restores_focus": true
+    },
+    {
+      "step": "rss-subscribe",
+      "passed": true
+    },
+    {
+      "step": "direct-transfer",
+      "passed": true
+    },
+    {
+      "step": "ui-transfer-download",
+      "passed": true,
+      "bytes": 8238
+    },
+    {
+      "step": "tmdb-settings",
+      "passed": true,
+      "synthetic_key": true,
+      "invalid_format_feedback": true
+    },
+    {
+      "step": "invalid-cookie-ui",
+      "passed": true,
+      "existing_binding_kept": true
+    },
+    {
+      "step": "admin-account-form",
+      "passed": true,
+      "synthetic_account": true
+    },
+    {
+      "step": "files-page",
+      "passed": true,
+      "no_transfer_form": true
+    },
+    {
+      "step": "搜索及榜单移除",
+      "passed": true,
+      "evidence": "新版空搜索页无榜单；输入验收返回第二季作品和三个来源评分。"
+    },
+    {
+      "step": "搜索筛选及视图",
+      "passed": true,
+      "evidence": "9分以上显示未找到作品；全部评分恢复结果；列表视图生效，无横向溢出。"
+    },
+    {
+      "step": "手机首页与弹窗",
+      "passed": true,
+      "evidence": "390×844：首页和弹窗无横向溢出；弹窗宽366px、文字正常横排、独立于页面布局。"
+    },
+    {
+      "step": "手机转存下载闭环",
+      "passed": true,
+      "downloadBytes": 8238,
+      "environment": "人工本地115和Alist服务，无真实账号"
+    },
+    {
+      "step": "手机设置及TMDB输入",
+      "passed": true,
+      "evidence": "390px无横向溢出；坏格式显示简短错误；人工API Key保存成功、已配置且输入清空。"
+    },
+    {
+      "step": "后台与设置排版",
+      "passed": true,
+      "evidence": "桌面表单宽度880px；后台转存页无重复设置按钮；账号页只显示必要字段。未创建真实账号。"
+    },
+    {
+      "step": "VPS真实第二季与资源列表",
+      "passed": true,
+      "evidence": "冰之城墙第二季4098显示2026、实际背景图片和三站评分；游客转存弹窗宽880px，显示请先登录，Escape恢复按钮焦点。"
+    },
+    {
+      "step": "VPS历史季度与移动端",
+      "passed": true,
+      "evidence": "2026夏季显示90部实时作品；可见12张封面均加载成功；周四筛选9部；秋/夏快速切换保持最终选择；390×844无横向溢出。"
+    },
+    {
+      "step": "VPS初始化表单",
+      "passed": true,
+      "evidence": "SSH重新连接后初始化页恢复：用户名、密码、初始化口令、创建账号；未提交任何真实账号或密钥。"
+    },
+    {
+      "step": "登录故障恢复",
+      "passed": true,
+      "evidence": "人工503异常响应显示加载失败，请重试；点击重试后表单恢复、错误消失，人工账号登录成功。"
+    },
+    {
+      "step": "最终请求模块转存下载复核",
+      "passed": true,
+      "downloadBytes": 8238,
+      "evidence": "故障恢复后重新登录，直接转存到任务完成、列文件、下载，字节与预期一致。"
+    },
+    {
+      "step": "最终部署与手机初始化表单",
+      "passed": true,
+      "evidence": "重新加载最终构建；真实初始化表单在桌面及390×844下正常，无横向溢出，未创建账号。"
+    }
+  ],
+  "desktop_viewport": [
+    1280,
+    720
+  ],
+  "mobile_viewport": [
+    390,
+    844
+  ],
+  "console_errors": 0,
+  "fault_injection": "One deliberate HTTP503 non-JSON response; expected failure verified with successful retry.",
+  "real_115_login_performed": false,
+  "real_cloud_transfer_performed": false,
+  "real_site_account_created_by_agent": false,
+  "synthetic_download_bytes": 8238,
+  "fixed_findings": [
+    {
+      "issue": "Narrow transfer dialog inherited page layout and rendered text vertically.",
+      "resolution": "Body portal, explicit width, isolated text styles, independent scrolling, focus handling."
+    },
+    {
+      "issue": "Legacy empty search showed nonfunctional ranking sections.",
+      "resolution": "Ranking UI and endpoint removed under explicit user instruction; search/filter/results verified."
+    },
+    {
+      "issue": "SSH forwarding stopped during final setup-page check.",
+      "resolution": "SSH forwarding reconnected; actual administrator setup and homepage verified again."
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "before/01-detail.jpg",
+      "bytes": 28282,
+      "sha256": "3ed16aadb9cd15dd155473975ca4db28ee09c1bec097ad931e78f3093a27fdf2"
+    },
+    {
+      "path": "before/02-transfer-dialog.jpg",
+      "bytes": 37698,
+      "sha256": "0af92f3519ee8008969f3ab19b89a4fb23b8dbc681c55df800db499772e57814"
+    },
+    {
+      "path": "before/03-login.jpg",
+      "bytes": 31278,
+      "sha256": "73f31a5ceb666c2188e19b457a509b966d0d194de03f17a53d66251cf28cba0f"
+    },
+    {
+      "path": "before/04-search-empty.jpg",
+      "bytes": 20942,
+      "sha256": "9cad0dd60c6de169b883b1c3c853ecc92bf47621c1590e72399eb2ba3e58a2be"
+    },
+    {
+      "path": "after/01-login.jpg",
+      "bytes": 15293,
+      "sha256": "f01dd8b259035e06cddb25f9305cdf0af098326b4c04cea8e8c9480aff75f9a0"
+    },
+    {
+      "path": "after/02-detail.jpg",
+      "bytes": 146739,
+      "sha256": "797f80f57c5de507056e6367a73ad390874763823c340367771d93bbbc04ae57"
+    },
+    {
+      "path": "after/03-transfer-dialog.jpg",
+      "bytes": 41088,
+      "sha256": "f909d68288e321251ec64717732ad90f57fc84434dc93eb187e75ecbf4624a16"
+    },
+    {
+      "path": "after/04-transfer-files.jpg",
+      "bytes": 32426,
+      "sha256": "35f2c509663e252fef5abe257e1a8f0de26c8bd648280ca71346ccf8567ebbe7"
+    },
+    {
+      "path": "after/05-settings.jpg",
+      "bytes": 49462,
+      "sha256": "db7b99f1da3a54a3cb3abef8630704c006d6de56c19f803bb71f00d8fe6ef468"
+    },
+    {
+      "path": "after/06-admin-accounts.jpg",
+      "bytes": 20678,
+      "sha256": "54f8605f96eba9e95e507d6d7f6651ad3b24ea901c5554aec0bc34045487497a"
+    },
+    {
+      "path": "after/07-search-empty.jpg",
+      "bytes": 12980,
+      "sha256": "2d4a37108fa7d14c1edbec11af43702cc3dd999b17d7ebb65d311ccff24dd45f"
+    },
+    {
+      "path": "after/08-search-results.jpg",
+      "bytes": 37814,
+      "sha256": "cd6abe91fdd1ff8e2e70a4c99a19309231e5638f5a3e6e48cc3fb0d23b907f37"
+    },
+    {
+      "path": "after/09-mobile-home.jpg",
+      "bytes": 27317,
+      "sha256": "c7994874119ca9e3218e83636bb0ee52a472b580517734869ae48a281239d4d5"
+    },
+    {
+      "path": "after/10-mobile-transfer-dialog.jpg",
+      "bytes": 23821,
+      "sha256": "a29837ccca4d6eecc3c8c28759fe2386a932031e4450b1bed5ff7ebf6bf0090e"
+    },
+    {
+      "path": "after/11-mobile-task-files.jpg",
+      "bytes": 22652,
+      "sha256": "ed0b7a748c2c07343dd5e611d3aae49812faa90e2783f282efdb788ec1a7d3f6"
+    },
+    {
+      "path": "after/12-mobile-settings.jpg",
+      "bytes": 32878,
+      "sha256": "98921d780a3febc0d0898c65f0f76cc51fe9885126bbffa967f98a0802e5fcb2"
+    },
+    {
+      "path": "after/13-live-second-season.jpg",
+      "bytes": 191959,
+      "sha256": "6a96529189696bf49b41d12e1aa4d89a4d2e1f5d0ecac1f9bca390af0800724a"
+    },
+    {
+      "path": "after/14-live-transfer-dialog.jpg",
+      "bytes": 41533,
+      "sha256": "4e3495b31e2ac90c6f42e13abb0ad26a01a5c7358f58493c551f8b642ac7e4ea"
+    },
+    {
+      "path": "after/15-live-summer-home.jpg",
+      "bytes": 159838,
+      "sha256": "4b5a5d266073dd05ccbd6ed25db4516d240a7dc3f54fe45201e3b96abc1c4d99"
+    },
+    {
+      "path": "after/16-live-mobile-home.jpg",
+      "bytes": 69326,
+      "sha256": "f52002c18df2ddc0c54c6e3989e907fbb3811d3b10d27c1aaff40aab3a9e0a76"
+    },
+    {
+      "path": "after/17-live-admin-setup.jpg",
+      "bytes": 19645,
+      "sha256": "20585ff4e9bbcf989d38b726b72e1e8addbaa48bc985f4de09652423785b60d8"
+    },
+    {
+      "path": "after/18-login-retry.jpg",
+      "bytes": 17621,
+      "sha256": "c246bc700fbe61ab2e47482188c9ad7a19f3ad868adfc2671b831946571069b4"
+    },
+    {
+      "path": "after/19-mobile-admin-setup.jpg",
+      "bytes": 14413,
+      "sha256": "09f026dc78da40a4e28551a9f811e22f273481bf30f6ffc04cfd2cea63e1a2a3"
+    }
+  ],
+  "screenshots_delivery": "Exact before/after JPEG files are delivered in the accompanying UI acceptance report folder.",
+  "boundary": "Public VPS pages observed without entering credentials; artificial website/115/Alist fixtures used for authenticated workflows. Not a complete accessibility certification."
+}

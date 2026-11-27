@@ -1,0 +1,14 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
+const dir=path.dirname(fileURLToPath(import.meta.url)),root=path.dirname(dir);
+const result=spawnSync(process.execPath,['--test','--test-reporter=tap','api.test.mjs'],{cwd:dir,encoding:'utf8'});
+process.stdout.write(result.stdout||'');process.stderr.write(result.stderr||'');
+const count=Number(result.stdout?.match(/^# tests (\d+)/m)?.[1]||0);
+const targets=['frontend/api.js','frontend/api.test.mjs','frontend/components.jsx','frontend/tracking.jsx','frontend/review.css','frontend/shell.js','static/mikan115-ui.js'];
+const report={verified_utc:new Date().toISOString(),node:process.version,platform:process.platform,success:result.status===0&&count===6,tests_run:count,environment:'Artificial fetch responses only; no provider connection or real credentials.',file_hashes:Object.fromEntries(targets.map(rel=>[rel,crypto.createHash('sha256').update(fs.readFileSync(path.join(root,rel))).digest('hex')]))};
+const output=path.join(root,'verification',process.platform==='win32'?'windows-frontend-tests.json':'linux-frontend-tests.json');
+fs.mkdirSync(path.dirname(output),{recursive:true});fs.writeFileSync(output,JSON.stringify(report,null,2));
+process.exit(report.success?0:1);

@@ -1,0 +1,119 @@
+{
+  "success": true,
+  "verified_utc": "2026-11-27T04:22:00.730Z",
+  "environment": "Six isolated local UI checks and three actual VPS desktop/mobile/home checks; public image URLs only, no real credentials or cloud operations.",
+  "checks": [
+    {
+      "name": "桌面详情仅横版 TMDB 背景、日语 Logo，保留内部评分",
+      "passed": true,
+      "details": {
+        "background": {
+          "height": 718,
+          "src": "https://image.tmdb.org/t/p/w1280/bOgsRcvQcetWXtVnPgKtYYf9aSV.jpg",
+          "width": 1279
+        },
+        "hero": 1,
+        "logo": {
+          "height": 323,
+          "src": "https://image.tmdb.org/t/p/original/6axGLL1B413xqYvfhjKIeFSBDka.png",
+          "width": 848
+        },
+        "overflow": false,
+        "ratings": 3,
+        "titleTextHidden": true
+      }
+    },
+    {
+      "name": "手机详情 Logo、评分与操作保持在单图边界内",
+      "passed": true,
+      "details": {
+        "allActionsInside": true,
+        "copyBottom": 844.0000305175781,
+        "heroBottom": 844,
+        "logoHeight": 110,
+        "logoWidth": 288.7875061035156,
+        "overflow": false,
+        "width": 390
+      }
+    },
+    {
+      "name": "详情简介弹窗与 Escape 焦点恢复正常",
+      "passed": true,
+      "details": {
+        "dialogs": 0,
+        "focus": "查看完整简介"
+      }
+    },
+    {
+      "name": "首页移除评分，卡片与追新入口保留",
+      "passed": true,
+      "details": {
+        "cards": 1,
+        "follow": 1,
+        "overflow": false,
+        "ratings": 0
+      }
+    },
+    {
+      "name": "缺少日语 Logo 时不显示文字替代，背景与评分继续可用",
+      "passed": true,
+      "details": {
+        "art": [
+          {
+            "height": 720,
+            "src": "https://image.tmdb.org/t/p/w1280/ht6WUmez8cFbwlrFmGdjbYyn3RG.jpg",
+            "width": 1280
+          }
+        ],
+        "logoCount": 0,
+        "ratings": 3,
+        "titleBox": 0
+      }
+    },
+    {
+      "name": "展示调整未产生浏览器脚本错误",
+      "passed": true,
+      "details": {
+        "errors": []
+      }
+    },
+    {
+      "name": "VPS 实际详情显示横版背景与日语 Logo，保留三站评分",
+      "passed": true,
+      "details": {
+        "background": "https://image.tmdb.org/t/p/w1280/bOgsRcvQcetWXtVnPgKtYYf9aSV.jpg",
+        "backgroundHeight": 718,
+        "backgroundWidth": 1279,
+        "heroCount": 1,
+        "logo": "https://image.tmdb.org/t/p/original/6axGLL1B413xqYvfhjKIeFSBDka.png",
+        "logoLoaded": true,
+        "overflow": false,
+        "ratings": 3
+      }
+    },
+    {
+      "name": "VPS 手机端日语 Logo 与正文未越过单图边界",
+      "passed": true,
+      "details": {
+        "copyBottom": 844.0000305175781,
+        "heroBottom": 844,
+        "logoLoaded": true,
+        "overflow": false,
+        "width": 390
+      }
+    },
+    {
+      "name": "VPS 首页无评分，全部卡片仍保留追新入口",
+      "passed": true,
+      "details": {
+        "cards": 82,
+        "follow": 82,
+        "overflow": false,
+        "ratings": 0
+      }
+    }
+  ],
+  "real_115_login_performed": false,
+  "real_cloud_transfer_performed": false,
+  "real_cloud_rename_performed": false
+}

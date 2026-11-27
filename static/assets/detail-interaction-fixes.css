@@ -1,0 +1,27 @@
+/* Let hero actions receive clicks through the content panel's transparent overlap.
+   The actual episode/cast body retains its own normal interactive hit area. */
+.work-detail-shell .work-detail-content {
+  pointer-events: none;
+}
+.work-detail-shell .work-detail-content > .detail-body {
+  pointer-events: auto;
+}
+
+/* A hero without a usable backdrop has a light surface and needs dark text.
+   Image-backed heroes retain their existing appearance. */
+.detail-hero-fallback .immersive-detail-title,
+.detail-hero-fallback .original-title,
+.detail-hero-fallback .detail-facts,
+.detail-hero-fallback .immersive-overview,
+.detail-hero-fallback .rating-mark {
+  color: #202124;
+  text-shadow: none;
+}
+.detail-hero-fallback .detail-facts .hero-fact-with-divider::before {
+  color: #787a80;
+}
+.detail-hero-fallback .immersive-detail-actions .secondary-button {
+  background: #ffffff;
+  border-color: #d8d9dd;
+  color: #202124;
+}

@@ -1,0 +1,17 @@
+{
+  "verified_utc": "2026-11-27T04:35:02.350Z",
+  "node": "v24.22.3",
+  "platform": "win32",
+  "success": true,
+  "tests_run": 6,
+  "environment": "Artificial fetch responses only; no provider connection or real credentials.",
+  "file_hashes": {
+    "frontend/api.js": "99192bafef37c1499968301982c414a782c1fe9125588d9be2d11cda72607aa9",
+    "frontend/api.test.mjs": "3b4a353178366888ae9d5df6d3d9f3bf17b0777cfbcea643fbc083533e7b9da8",
+    "frontend/components.jsx": "cd3a3d2b1572898310e55e5f8226fe5861a3d2223ced5d69b35b66b71925ff3b",
+    "frontend/tracking.jsx": "c36f1251450f35b08877081fa59edb8250eb600d3075cc3f084c555252fb7f19",
+    "frontend/review.css": "e95b969a8349dbd432954016bcbf781fab85b483dacb42420f6039098bd9f45e",
+    "frontend/shell.js": "d69a1d7c97f29395b49386e34f431def1930f29896b96fcdb1451b4d450e03ee",
+    "static/mikan115-ui.js": "30852f2c5c23b2243bde3823412008cc0cd73b752585366c7e5c02f9036e80c1"
+  }
+}

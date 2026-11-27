@@ -1,0 +1,117 @@
+{
+  "success": true,
+  "checks": [
+    {
+      "name": "人工本地账号登录并完成模拟转存",
+      "passed": true
+    },
+    {
+      "name": "模拟资源弹窗与直接转存流程",
+      "passed": true
+    },
+    {
+      "name": "浏览器模拟 Alist 下载完整字节",
+      "passed": true,
+      "bytes": 8238
+    },
+    {
+      "name": "真实作品桌面单图与底部文字边界",
+      "passed": true,
+      "details": {
+        "artImages": 1,
+        "artLoaded": true,
+        "copy": {
+          "bottom": 720,
+          "height": 283.3500061035156,
+          "left": 0,
+          "right": 1280,
+          "top": 436.6499938964844,
+          "width": 1280,
+          "x": 0,
+          "y": 436.6499938964844
+        },
+        "episodeText": false,
+        "height": 720,
+        "hero": {
+          "bottom": 720,
+          "height": 720,
+          "left": 0,
+          "right": 1280,
+          "top": 0,
+          "width": 1280,
+          "x": 0,
+          "y": 0
+        },
+        "horizontalOverflow": false,
+        "scrollHeight": 720,
+        "width": 1280
+      }
+    },
+    {
+      "name": "向下翻页不再重复图片或超出图片",
+      "passed": true,
+      "details": {
+        "copyBottom": 720,
+        "heroBottom": 720,
+        "oneArt": true,
+        "scrollY": 0
+      }
+    },
+    {
+      "name": "简介弹窗 Escape 关闭并归还焦点",
+      "passed": true
+    },
+    {
+      "name": "390px 移动端文字及按钮在单图内",
+      "passed": true,
+      "details": {
+        "artCount": 1,
+        "copyBottom": 844.0000305175781,
+        "copyTop": 533.7875366210938,
+        "height": 844,
+        "heroBottom": 844,
+        "horizontalOverflow": false,
+        "width": 390
+      }
+    },
+    {
+      "name": "第二季详情保留年份、封面和三方评分，无剧集列表",
+      "passed": true,
+      "details": {
+        "title": "冰之城墙 第二季",
+        "image": "https://image.tmdb.org/t/p/original/ht6WUmez8cFbwlrFmGdjbYyn3RG.jpg",
+        "loaded": true
+      }
+    },
+    {
+      "name": "错字搜索命中柯南且搜索页没有榜单",
+      "passed": true
+    },
+    {
+      "name": "2012 冬季在首页显示缓存作品",
+      "passed": true
+    },
+    {
+      "name": "2026 夏季首页显示内容",
+      "passed": true
+    },
+    {
+      "name": "真实预览检查期间无脚本错误",
+      "passed": true,
+      "errors": []
+    },
+    {
+      "name": "AI 核对的第二季使用蜜柑原封面",
+      "passed": true,
+      "details": {
+        "loaded": true,
+        "src": "https://mikanani.me/images/Bangumi/201701/a737c4d9.jpg?width=400&format=webp",
+        "title": "情热传说 the X 第二季"
+      }
+    }
+  ],
+  "real_115_login_performed": false,
+  "real_cloud_transfer_performed": false,
+  "verified_utc": "2026-11-27T02:38:33.265Z",
+  "scope": "Current production preview and local-only synthetic 115/Alist fixture; desktop 1280x720 and mobile390x844."
+}

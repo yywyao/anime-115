@@ -1,0 +1,11 @@
+{
+  "baseline_sha256": "9bff4ebc86ff7ef42c19a3e3b6c70e98d58801b840e654b6abe152ae20090778",
+  "detail_transfer_action": 1,
+  "legacy_request_modal_removed": 1,
+  "local_router": 1,
+  "snapshot_notice": 1,
+  "poster_rendering": 1,
+  "original_bytes": 373095,
+  "adapted_bytes": 221110,
+  "real_login_performed": false
+}
