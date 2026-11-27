@@ -45,52 +45,102 @@ class Workflow:
         self.store,self.config,self.alist,self.pan_factory=store,config,alist,pan_factory
         self.connection_lock=threading.RLock()
         self.worker_id=secrets.token_hex(12)
+        self.next_connection_check=0.
 
     def marker(self,uid):return f'mikan115:{self.store.instance_id}:{uid}'
 
     def connection_status(self):
         b=self.store.binding(False)
-        return {'configured':bool(b),'ready':bool(b and b['ready']),
+        pending=bool(self.store.setting('pending_115_cookie'))
+        return {'configured':bool(b or pending),'ready':bool(b and b['ready']),
                 'account_uid':b['account_uid'] if b else None,
                 'account_name':b['account_name'] if b else None,
                 'transfer_folder':b['root_name'] if b else None,
                 'alist_mount':b['mount_path'] if b else None,
                 'cookie_source':self.store.setting('cookie_source','third_party'),
-                'cookie_configured':bool(b),'auto_relogin':False,'qr_login_enabled':False,
+                'cookie_configured':bool(b or pending),'auto_relogin':False,'qr_login_enabled':False,
+                'alist_configured':any(self.alist.credentials()),'alist_managed':self.config.alist_managed,
+                'connection_error':self.store.setting('connection_error') or None,
+                'connection_error_code':self.store.setting('connection_error_code') or None,
                 'alist_url':self.config.alist_url}
 
-    def bind(self,cookie,*,cookie_source='third_party',alist_password='',alist_token=''):
+    def bind(self,cookie='',*,cookie_source=None,alist_password='',alist_token=''):
+        cookie_source=cookie_source or self.store.setting('cookie_source','third_party')
         if cookie_source not in {'third_party','existing_session'}:raise AppError('INVALID_COOKIE_SOURCE','请选择已有的第三方或其他已有会话 CK')
-        cookie=normalize_cookie(cookie)
+        if not all(isinstance(value,str) for value in (cookie,alist_password,alist_token)):
+            raise AppError('INVALID_CONNECTION_FIELDS','连接设置格式不正确')
         with self.connection_lock:
-            pan=self.pan_factory(cookie);identity=pan.identity();uid=identity['uid']
-            prior=self.store.binding(False)
-            if prior and prior['account_uid']!=uid:
-                count=self.store.one('SELECT count(*) AS n FROM transfers WHERE state NOT IN (\'FILES_READY\',\'FAILED\',\'CANCELED\')')['n']
-                if count:raise AppError('ACCOUNT_HAS_ACTIVE_TASKS','仍有未结束的任务，不能切换 115 账号',409)
-                raise AppError('ACCOUNT_SWITCH_REQUIRES_NEW_INSTANCE','请为其他 115 账号使用新的数据目录，避免混合不同账号的任务',409)
-            name='Mikan115-Transfers-'+self.store.instance_id[:8]
-            mount='/mikan115-'+self.store.instance_id[:8]
-            if prior:
-                cid=prior['root_cid'];pan.verify_child('0',cid,name)
-            else:
-                # An instance-specific reserved name cannot silently reuse a daily folder.
-                matches=[f for f in pan.list_files('0') if not f.get('fid') and str(f.get('n') or f.get('name') or '')==name]
-                if matches:raise AppError('DEDICATED_FOLDER_ALREADY_EXISTS','此实例的专用目录已存在但没有配套记录，请检查数据目录，未复用现有文件夹',409)
-                cid=pan.create_folder('0',name);pan.verify_child('0',cid,name)
-            if alist_password or alist_token:
-                self.store.set_setting('alist_credentials',self.store.encrypt(json.dumps({'password':alist_password,'token':alist_token})))
-                self.alist._token=''
-            # Save a pending connection before provisioning. A retry reuses only this recorded CID.
-            with self.store.transaction() as c:
-                c.execute('''INSERT INTO binding VALUES(1,?,?,?,?,?,?,?,0,?)
-                    ON CONFLICT(id) DO UPDATE SET account_name=excluded.account_name,
-                    cookie_encrypted=excluded.cookie_encrypted,ready=0,updated_at=excluded.updated_at''',
-                    (uid,identity['name'],self.store.encrypt(cookie),cid,name,mount,prior['storage_id'] if prior else 0,time.time()))
-            self.store.set_setting('cookie_source',cookie_source)
-            sid=self.alist.provision(cookie,uid,cid,mount,self.marker(uid),prior['storage_id'] if prior and prior['storage_id'] else None)
-            with self.store.transaction() as c:c.execute('UPDATE binding SET storage_id=?,ready=1,updated_at=? WHERE id=1',(sid,time.time()))
-            return self.connection_status()
+            try:
+                return self._bind(cookie,cookie_source,alist_password,alist_token)
+            except AppError as error:
+                self.store.set_setting('connection_error',error.message)
+                self.store.set_setting('connection_error_code',error.code)
+                raise
+
+    def _bind(self,cookie,cookie_source,alist_password,alist_token):
+        prior=self.store.binding(False)
+        saved=self.store.setting('pending_115_cookie') or (prior and prior['cookie_encrypted'])
+        if not cookie and not saved:raise AppError('COOKIE_REQUIRED','请输入 115 CK')
+        cookie=normalize_cookie(cookie or self.store.decrypt(saved))
+        pan=self.pan_factory(cookie)
+        identity=pan.identity()
+        uid=identity['uid']
+        if prior and prior['account_uid']!=uid:
+            count=self.store.one("SELECT count(*) AS n FROM transfers WHERE state NOT IN ('FILES_READY','FAILED','CANCELED')")['n']
+            if count:raise AppError('ACCOUNT_HAS_ACTIVE_TASKS','仍有未结束的任务，不能切换 115 账号',409)
+            raise AppError('ACCOUNT_SWITCH_REQUIRES_NEW_INSTANCE','请为其他 115 账号使用新的数据目录',409)
+        encrypted=self.store.encrypt(cookie)
+        self.store.set_setting('pending_115_cookie',encrypted)
+        self.store.set_setting('cookie_source',cookie_source)
+        if alist_password or alist_token:
+            self.store.set_setting('alist_credentials',self.store.encrypt(json.dumps({'password':alist_password,'token':alist_token})))
+            self.alist.reset_auth_cache()
+        self.alist.preflight()
+        name='Mikan115-Transfers-'+self.store.instance_id[:8]
+        mount='/mikan115-'+self.store.instance_id[:8]
+        if prior:
+            cid=prior['root_cid']
+            pan.verify_child('0',cid,name)
+        else:
+            matches=[f for f in pan.list_files('0') if not f.get('fid') and str(f.get('n') or f.get('name') or '')==name]
+            if matches:raise AppError('DEDICATED_FOLDER_ALREADY_EXISTS','此实例的专用目录缺少配套记录，请检查数据目录',409)
+            cid=pan.create_folder('0',name)
+        with self.store.transaction() as c:
+            c.execute('''INSERT INTO binding VALUES(1,?,?,?,?,?,?,?,0,?)
+                ON CONFLICT(id) DO UPDATE SET account_name=excluded.account_name,
+                cookie_encrypted=excluded.cookie_encrypted,ready=0,updated_at=excluded.updated_at''',
+                (uid,identity['name'],encrypted,cid,name,mount,prior['storage_id'] if prior else 0,time.time()))
+        pan.verify_child('0',cid,name)
+        sid=self.alist.provision(cookie,uid,cid,mount,self.marker(uid),prior['storage_id'] if prior and prior['storage_id'] else None)
+        self.alist.list_files(mount)
+        with self.store.transaction() as c:
+            c.execute('UPDATE binding SET storage_id=?,ready=1,updated_at=? WHERE id=1',(sid,time.time()))
+            c.execute("DELETE FROM settings WHERE key IN ('pending_115_cookie','connection_error','connection_error_code')")
+        return self.connection_status()
+
+    def reconcile_connection(self):
+        if not self.config.alist_managed or not any(self.alist.credentials()):return
+        now=time.monotonic()
+        if now<self.next_connection_check:return
+        self.next_connection_check=now+60
+        with self.connection_lock:
+            pending=self.store.setting('pending_115_cookie')
+            b=self.store.binding(False)
+            if not b and not pending:return
+            if self.store.setting('connection_error_code') in {'COOKIE_EXPIRED','DEDICATED_FOLDER_ALREADY_EXISTS','ALIST_MOUNT_CONFLICT','ALIST_META_CONFLICT','ALIST_STORAGE_CHANGED'}:return
+            try:
+                if pending or not b['ready']:
+                    self.bind()
+                else:
+                    marker=self.marker(b['account_uid'])
+                    status=self.alist.inspect_reserved_mount(b['mount_path'],marker,b['storage_id'])
+                    if status['state']=='missing':self.bind()
+                    elif status['state']!='managed':
+                        with self.store.transaction() as c:c.execute('UPDATE binding SET ready=0 WHERE id=1')
+                        raise AppError('ALIST_MOUNT_CONFLICT','Alist 专用存储已改变，请核对后修复连接',409)
+            except AppError as error:
+                self.store.set_setting('connection_error',error.message)
+                self.store.set_setting('connection_error_code',error.code)
 
     def scope(self,task=None):
         b=self.store.binding()
@@ -106,7 +156,7 @@ class Workflow:
             if task['task_path']!=expected:raise AppError('TASK_SCOPE_MISMATCH','任务目录不匹配，已停止操作',409)
         return b,pan
 
-    def create(self,user,magnet,title='',work_id='',*,subscription_id=None,subscription_revision=None):
+    def create(self,user,magnet,title='',work_id='',*,subscription_id=None,subscription_revision=None,enqueue_only=False,naming=None):
         infohash,magnet=normalize_magnet(magnet)
         with self.connection_lock:
             b=self.store.binding();now=time.time()
@@ -120,9 +170,12 @@ class Workflow:
                 if not row:c.execute('INSERT INTO transfers(id,account_uid,infohash,magnet,title,work_id,state,created_at,updated_at) VALUES(?,?,?,?,?,?,\'NEW\',?,?)',
                     (tid,b['account_uid'],infohash,magnet,str(title or infohash)[:300],str(work_id)[:150],now,now))
                 c.execute('INSERT OR IGNORE INTO transfer_owners VALUES(?,?)',(tid,user['id']))
+                if naming and (not row or c.execute('SELECT work_id FROM transfers WHERE id=?',(tid,)).fetchone()['work_id']==str(work_id)):
+                    c.execute('INSERT OR IGNORE INTO transfer_naming VALUES(?,?,?,?,?,?)',
+                              (tid,json.dumps(naming,ensure_ascii=False),int(naming['rules'].get('rename',False)),'PENDING',None,now))
             if not row:
                 self.store.event(tid,'CREATED','直接创建转存任务，无审批环节')
-                self.submit(tid)
+                if not enqueue_only:self.submit(tid)
             return self.get(user,tid)
 
     def claim(self,tid,states):
@@ -199,8 +252,13 @@ class Workflow:
                 if not task['task_cid']:
                     raise AppError('SUBMIT_REQUIRES_REVIEW','提交结果不确定，需管理员核实专用目录后处理',409)
                 cloud_done=task['state']=='WAITING_FILES'
+                upstream=None
                 if task['alist_task_id'] and not cloud_done:
-                    upstream=self.alist.task_info(task['alist_task_id'])
+                    try:upstream=self.alist.task_info(task['alist_task_id'])
+                    except ProviderError as error:
+                        if error.code!='ALIST_NOT_FOUND':raise
+                        self.update(tid,alist_task_id=None)
+                if upstream:
                     state=int(upstream.get('state',-1));self.update(tid,progress=min(100,max(0,float(upstream.get('progress') or 0))))
                     if state in ALIST_FAILED:raise AppError('CLOUD_TASK_FAILED','115 云下载未完成，请检查账号配额、资源可用性后重试',409)
                     cloud_done=state==ALIST_SUCCEEDED
@@ -273,6 +331,7 @@ class Workflow:
         return self.get(user,tid)
 
     def tick(self):
+        self.reconcile_connection()
         # Persisted NEW tasks are safe to claim after a restart. An interrupted
         # SUBMITTING task is ambiguous and must never be silently sent again.
         with self.store.transaction() as c:

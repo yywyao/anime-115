@@ -167,7 +167,7 @@ class Catalog:
             year=work.get('year')
             season=work.get('release_season')
             order=(int(year)*4+quarters.index(season)) if str(year).isdigit() and season in quarters else 0
-            return (0 if order in (current_order,current_order+1) else 1,abs(current_order-order))
+            return (0 if order in (current_order,current_order+1) else 1,-order)
         fresh={row['key'] for row in self.store.all(
             "SELECT key FROM catalog_cache WHERE expires_at>? AND (key LIKE 'tmdb:%' OR (key LIKE 'bangumi:%' AND payload<>'\"\"'))",(now,))}
         tmdb=self.metadata.status()['tmdb_configured']
@@ -226,7 +226,8 @@ class Catalog:
     def update_next_quarter(self):
         current=self.current();seasons=['冬','春','夏','秋'];pos=seasons.index(current['season'])
         first=(current['year'],current['season']);upcoming=(current['year']+(pos==3),seasons[(pos+1)%4])
-        quarters=[first,upcoming]+[(y,s) for y in range(2012,current['year']+1) for s in seasons if (y,s) not in {first,upcoming}]
+        quarters=[first,upcoming]+[(y,s) for y in range(current['year'],2011,-1) for s in reversed(seasons)
+                                   if (y,s) not in {first,upcoming}]
         for year,season in quarters:
             if self._update_stop.is_set():return None
             key=f'quarter:{year}:{season}';row=self.store.one('SELECT * FROM catalog_sync WHERE key=?',(key,))

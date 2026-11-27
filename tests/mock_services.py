@@ -81,6 +81,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if path=='/api/auth/login':
                 if body.get('username')=='admin' and body.get('password')=='artificial-alist-password':return self.result({'code':200,'data':{'token':'artificial-alist-token'}})
                 return self.result({'code':400,'message':'invalid admin'})
+            if path=='/api/admin/driver/names':return self.result({'code':200,'data':['115 Cloud']})
             if path=='/api/admin/storage/list':return self.result({'code':200,'data':{'content':list(self.state.storages.values()),'total':len(self.state.storages)}})
             if path=='/api/admin/storage/create':
                 assert body['driver']=='115 Cloud';addition=json.loads(body['addition']);assert addition['cookie']==COOKIE

@@ -28,6 +28,14 @@ class IdentityRegression(unittest.TestCase):
         result=self.make([{'type':'tv','id':77,'season':2}]).enrich({'id':'original','title':'原名','provider_ids':{'anilist':'100'}})
         self.assertEqual(result['id'],'original');self.assertEqual(result['title'],'原名');self.assertEqual(result['tmdb_season'],2);self.assertEqual(result['tmdb_id'],77)
         self.assertIn('中文名',result['aliases']);self.assertEqual(result['provider_ids']['bangumi'],'200')
+    def test_exact_fribb_crosswalk_supplies_tvdb_id_and_separate_season(self):
+        fribb=[{'anilist_id':100,'themoviedb_id':{'tv':77},'tvdb_id':1234,
+                'season':{'tmdb':2,'tvdb':3}}]
+        index=CrossReferences({'items':[{'title':'part','sites':[{'site':'bangumi','id':'200'},{'site':'aniList','id':'100'}]}]},fribb,{'subjects':[]})
+        result=index.enrich({'id':'original','provider_ids':{'anilist':'100'}})
+        self.assertEqual(result['provider_ids']['tvdb'],'1234')
+        self.assertEqual(result['tvdb_season'],3)
+        self.assertEqual(result['tvdb_mapping'],{'source':'Fribb/anime-lists','id':'1234','season':3,'tmdb_id':77,'tmdb_season':2})
     def test_similar_title_without_explicit_source_id_is_never_merged(self):
         result=self.make([{'type':'tv','id':77,'season':2}]).enrich({'id':'other','title':'第二季'})
         self.assertNotIn('tmdb_id',result)

@@ -2,11 +2,18 @@ import json
 import posixpath
 import secrets
 import threading
+import time
 import urllib.parse
 
 from .errors import AppError,ProviderError
 from .http_client import HTTP
 from .pan115 import normalize_cookie,cookie_uid
+
+ALIST_115_DRIVER='115 Cloud'
+ALIST_115_OFFLINE_TOOL='115 Cloud'
+_ALIST_READY_STATUSES={'','init','initializing','loading','starting'}
+_ALIST_COOKIE_REQUIRED=('UID','CID','SEID')
+_ALIST_COOKIE_OPTIONAL=('KID',)
 
 
 class Alist:
@@ -36,6 +43,10 @@ class Alist:
             if data.get('code')!=200 or not token:raise ProviderError('ALIST_AUTH_FAILED','Alist 管理认证失败，请检查管理凭据')
             self._token=token;return token
 
+    def reset_auth_cache(self):
+        """Forget the in-memory admin token; credentials remain encrypted."""
+        with self._lock:self._token=''
+
     def call(self,method,path,body=None,*,retry=True):
         data=self.http.json(method,self.config.alist_url+path,body=body,headers={'Authorization':self._auth()})
         if data.get('code')==401 and retry:
@@ -45,6 +56,13 @@ class Alist:
             if data.get('code')==404:raise ProviderError('ALIST_NOT_FOUND','Alist 尚未找到目标任务或文件，请刷新后再试')
             raise ProviderError('ALIST_REJECTED','Alist 未接受操作，请检查 115 存储与云下载权限')
         return data.get('data')
+
+    def preflight(self):
+        """Authenticate AList and verify the pinned 115 driver is available."""
+        names=self.call('GET','/api/admin/driver/names')
+        if not isinstance(names,list) or ALIST_115_DRIVER not in names:
+            raise ProviderError('ALIST_115_DRIVER_UNAVAILABLE','当前 Alist 未提供 115 Cloud 驱动，请检查版本和管理员权限')
+        return {'driver':ALIST_115_DRIVER,'drivers':names}
 
     def storages(self):
         out=[]
@@ -60,17 +78,59 @@ class Alist:
         if not isinstance(data,dict):raise ProviderError('ALIST_INVALID_STORAGE','Alist 存储信息不完整')
         return data
 
+    def inspect_reserved_mount(self,mount,marker,storage_id=None):
+        """Classify an instance-owned mount without changing AList state."""
+        matches=[s for s in self.storages() if s.get('mount_path')==mount]
+        if not matches:return {'state':'missing','storage':None}
+        if len(matches)>1:return {'state':'conflict','storage':None,'matches':matches}
+        storage=matches[0]
+        try:sid=int(storage.get('id'))
+        except (TypeError,ValueError):sid=0
+        try:expected_sid=int(storage_id) if storage_id is not None else None
+        except (TypeError,ValueError):expected_sid=-1
+        if (storage.get('remark')!=marker or (expected_sid is not None and sid!=expected_sid)
+            or storage.get('driver')!=ALIST_115_DRIVER):
+            return {'state':'tampered','storage':storage}
+        return {'state':'managed','storage':storage}
+
+    @staticmethod
+    def _exact_mount(rows,mount,marker):
+        matches=[s for s in rows if s.get('mount_path')==mount]
+        if len(matches)>1:raise ProviderError('ALIST_MOUNT_CONFLICT','Alist 专用挂载点冲突')
+        if matches and matches[0].get('remark')!=marker:
+            raise ProviderError('ALIST_MOUNT_CONFLICT','该 Alist 挂载点不属于本网站，未进行覆盖')
+        if matches and matches[0].get('driver')!=ALIST_115_DRIVER:
+            raise ProviderError('ALIST_MOUNT_CONFLICT','该 Alist 挂载点使用了不受支持的驱动，未进行覆盖')
+        return matches[0] if matches else None
+
+    @staticmethod
+    def _cookie_pairs(raw):
+        normalized=normalize_cookie(raw)
+        return dict(part.split('=',1) for part in normalized.split('; '))
+
+    def _wait_for_ready(self,sid,cid,mount,marker,uid,cookie):
+        """Allow a newly-created driver a short, bounded initialization window."""
+        for attempt in range(4):
+            storage=self.get_storage(sid)
+            status=str(storage.get('status') or '').lower()
+            if status=='work':
+                return self.assert_scope(sid,cid,mount,marker,uid,cookie)
+            if status not in _ALIST_READY_STATUSES or attempt==3:
+                return self.assert_scope(sid,cid,mount,marker,uid,cookie)
+            time.sleep(0.25*(attempt+1))
+        return self.assert_scope(sid,cid,mount,marker,uid,cookie)
+
     def provision(self,cookie,uid,cid,mount,marker,storage_id=None):
         cookie=normalize_cookie(cookie)
         if cookie_uid(cookie)!=str(uid) or not str(cid).isdigit() or str(cid)=='0':
             raise AppError('STORAGE_SCOPE_MISMATCH','拒绝将日常根目录或其他账号挂载为转存目录',409)
-        matches=[s for s in self.storages() if s.get('mount_path')==mount]
-        if len(matches)>1:raise ProviderError('ALIST_MOUNT_CONFLICT','Alist 专用挂载点冲突')
-        if matches and matches[0].get('remark')!=marker:
-            raise ProviderError('ALIST_MOUNT_CONFLICT','该 Alist 挂载点不属于本网站，未进行覆盖')
+        existing=self._exact_mount(self.storages(),mount,marker)
+        matches=[existing] if existing else []
         if storage_id and matches and int(matches[0]['id'])!=int(storage_id):
             raise ProviderError('ALIST_MOUNT_CONFLICT','Alist 专用挂载记录已改变')
-        payload={'mount_path':mount,'driver':'115 Cloud','cache_expiration':1,
+        # Protect the reserved path before exposing a newly-created storage.
+        self.provision_privacy(mount,marker)
+        payload={'mount_path':mount,'driver':ALIST_115_DRIVER,'cache_expiration':1,
                  'addition':json.dumps({'cookie':cookie,'root_folder_id':str(cid),'page_size':1000,'limit_rate':2,'qrcode_token':''}),
                  'remark':marker,'disabled':False,'disable_index':True,'enable_sign':True,
                  'web_proxy':True,'webdav_policy':'native_proxy','order_by':'name','order_direction':'asc'}
@@ -78,9 +138,15 @@ class Alist:
             payload['id']=matches[0]['id'];self.call('POST','/api/admin/storage/update',payload);sid=int(payload['id'])
         else:
             result=self.call('POST','/api/admin/storage/create',payload) or {};sid=int(result.get('id') or 0)
+            if sid<=0:
+                # Some AList builds return an empty body after a successful
+                # create. Re-read only the exact owned marker.
+                created=self._exact_mount(self.storages(),mount,marker)
+                if created:
+                    try:sid=int(created.get('id') or 0)
+                    except (TypeError,ValueError):sid=0
         if sid<=0:raise ProviderError('ALIST_STORAGE_CREATE_FAILED','Alist 未返回有效存储记录')
-        self.provision_privacy(mount,marker)
-        self.assert_scope(sid,cid,mount,marker,uid,cookie)
+        self._wait_for_ready(sid,cid,mount,marker,uid,cookie)
         return sid
 
     def provision_privacy(self,mount,marker):
@@ -111,20 +177,26 @@ class Alist:
         raise ProviderError('ALIST_META_INCOMPLETE','Alist 目录权限列表过长')
 
     def assert_scope(self,sid,cid,mount,marker,uid,expected_cookie=None):
-        s=self.get_storage(sid)
+        try:s=self.get_storage(sid)
+        except ProviderError as error:
+            if error.code=='ALIST_NOT_FOUND':
+                raise ProviderError('ALIST_STORAGE_MISSING','Alist 专用存储已不存在，未进行转存和下载')
+            raise
         try:a=json.loads(s.get('addition') or '{}')
         except ValueError:raise ProviderError('ALIST_STORAGE_CHANGED','Alist 存储配置不正确')
-        if (s.get('driver')!='115 Cloud' or s.get('mount_path')!=mount or s.get('remark')!=marker
+        if (s.get('driver')!=ALIST_115_DRIVER or s.get('mount_path')!=mount or s.get('remark')!=marker
             or str(a.get('root_folder_id'))!=str(cid) or s.get('disabled')
-            or not s.get('web_proxy') or a.get('qrcode_token') or s.get('status')!='work'):
+            or not s.get('web_proxy') or a.get('qrcode_token') or s.get('status')!='work'
+            or not a.get('cookie') or not a.get('page_size') or not a.get('limit_rate')):
             raise ProviderError('ALIST_STORAGE_CHANGED','Alist 专用存储已改变，已停止转存和下载')
         try:actual_uid=cookie_uid(normalize_cookie(a.get('cookie','')))
         except (AppError,AttributeError):raise ProviderError('ALIST_STORAGE_CHANGED','Alist CK 配置已改变')
         if actual_uid!=str(uid):raise ProviderError('ALIST_ACCOUNT_MISMATCH','Alist 存储账号与 115 连接不一致')
         if expected_cookie:
-            pairs=lambda raw:dict(x.strip().split('=',1) for x in normalize_cookie(raw).split(';'))
-            original,current=pairs(expected_cookie),pairs(a['cookie'])
-            if any(original.get(k)!=current.get(k) for k in ('UID','CID','SEID','KID')):
+            original,current=self._cookie_pairs(expected_cookie),self._cookie_pairs(a['cookie'])
+            if any(original.get(k)!=current.get(k) for k in _ALIST_COOKIE_REQUIRED):
+                raise ProviderError('ALIST_COOKIE_MISMATCH','Alist 的 CK 与网站绑定记录不一致，请重新绑定同一份 CK')
+            if any(k in original and original.get(k)!=current.get(k) for k in _ALIST_COOKIE_OPTIONAL):
                 raise ProviderError('ALIST_COOKIE_MISMATCH','Alist 的 CK 与网站绑定记录不一致，请重新绑定同一份 CK')
         mid=self.store.setting('alist_meta_id')
         if not mid:raise ProviderError('ALIST_META_NOT_READY','尚未建立专用目录访问保护')
@@ -150,7 +222,7 @@ class Alist:
         return rows
 
     def submit_cloud(self,task_path,magnet):
-        data=self.call('POST','/api/fs/add_offline_download',{'path':task_path,'urls':[magnet],'tool':'115 Cloud','delete_policy':'delete_never'}) or {}
+        data=self.call('POST','/api/fs/add_offline_download',{'path':task_path,'urls':[magnet],'tool':ALIST_115_OFFLINE_TOOL,'delete_policy':'delete_never'}) or {}
         tasks=data.get('tasks') or []
         if len(tasks)!=1 or not tasks[0].get('id'):
             raise ProviderError('SUBMIT_RESULT_UNKNOWN','云下载提交结果待核实，请勿重复提交',uncertain=True)

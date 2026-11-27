@@ -67,6 +67,69 @@ class ClosedLoop(Harness):
     def test_without_ck_worker_never_contacts_alist_or_115(self):
         self.app.workflow.tick();self.app.rss.tick();self.assertEqual(self.state.calls,[])
 
+    def test_ck_saved_when_alist_unavailable_then_reused(self):
+        self.config.alist_password=''
+        status,data,_=self.request('POST','/api/settings/connection',{'cookie':'Cookie: '+COOKIE})
+        self.assertEqual(status,409,data)
+        self.assertEqual(data['code'],'ALIST_CREDENTIALS_REQUIRED')
+        self.assertEqual(set(self.state.folders),{'0','1'})
+        self.assertIsNone(self.store.binding(False))
+        self.assertNotEqual(self.store.setting('pending_115_cookie'),COOKIE)
+        _,pending,_=self.request('GET','/api/settings/connection')
+        self.assertTrue(pending['cookie_configured'])
+        self.assertFalse(pending['ready'])
+        self.assertNotIn(COOKIE,json.dumps(pending))
+        self.config.alist_managed=True
+        self.config.alist_password='artificial-alist-password'
+        self.app.workflow.tick()
+        bound=self.store.binding()
+        self.assertTrue(bound['ready'])
+        self.assertEqual(self.store.decrypt(bound['cookie_encrypted']),COOKIE)
+        self.assertFalse(self.store.setting('pending_115_cookie'))
+        self.assertEqual(len(self.state.folders),3)
+
+    def test_recreate_managed_alist_mount_after_restart(self):
+        self.bind()
+        self.config.alist_managed=True
+        task=self.create()
+        previous=self.store.binding()
+        self.state.complete()
+        self.state.tasks.clear()
+        self.state.storages.clear()
+        self.state.metas.clear()
+        self.app.workflow.tick()
+        current=self.store.binding()
+        self.assertNotEqual(previous['storage_id'],current['storage_id'])
+        self.assertEqual(previous['root_cid'],current['root_cid'])
+        self.assertEqual(self.app.workflow.get(self.user,task['id'])['state'],'FILES_READY')
+        self.assertEqual(self.state.submit_count,1)
+
+    def test_stable_release_batch_to_vps_library(self):
+        self.bind()
+        status,queued,_=self.request('POST','/api/transfers',{'mikan_id':'236','release_ids':[HASH,HASH]})
+        self.assertEqual(status,202,queued)
+        self.assertEqual(len(queued['tasks']),1)
+        tid=queued['tasks'][0]['id']
+        self.assertEqual(self.state.submit_count,0)
+        self.app.workflow.tick()
+        self.assertEqual(self.state.submit_count,1)
+        self.state.complete()
+        self.app.workflow.poll(tid)
+        status,available,_=self.request('GET',f'/api/tasks/{tid}/vps-download')
+        self.assertEqual(status,200,available)
+        self.assertTrue(available['available'])
+        self.assertEqual(list(self.app.library.root.iterdir()),[])
+        status,result,_=self.request('POST',f'/api/tasks/{tid}/vps-download',{})
+        self.assertEqual(status,202,result)
+        self.app.library.tick()
+        status,complete,_=self.request('GET',f'/api/tasks/{tid}/vps-download')
+        self.assertEqual(status,200,complete)
+        self.assertEqual(complete['status'].upper(),'COMPLETE')
+        self.assertEqual([file.read_bytes() for file in self.app.library.root.rglob('*.mp4')],[PAYLOAD])
+        status,summary,_=self.request('GET','/api/library?mikan_ids=236')
+        self.assertEqual(status,200,summary)
+        self.assertNotEqual(summary['items']['236']['status'],'not_in_library')
+
     def test_web_resource_to_cloud_to_alist_download_bytes(self):
         self.bind()
         status,schedule,_=self.request('GET','/api/mikan/weekdays');self.assertEqual(status,200);self.assertEqual(schedule['source'],'live')

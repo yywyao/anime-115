@@ -13,11 +13,14 @@ import secrets
 import threading
 import urllib.parse
 
+from . import releases
 from .alist import Alist
 from .auth import Auth,public_user
+from .batch import Batch
 from .catalog import Catalog
 from .config import Config
 from .errors import AppError
+from .library import Library
 from .rss import RSS
 from .store import Store
 from .workflow import Workflow
@@ -35,10 +38,12 @@ class Application:
         self.catalog=catalog or Catalog(self.store,config)
         self.metadata=getattr(self.catalog,'metadata',None) or Metadata(self.store)
         self.rss=RSS(self.store,config,self.catalog,self.workflow)
-        self.sonarr=Sonarr(self.store);self.organizer=Organizer(self.store,self.workflow,self.catalog,self.sonarr)
+        self.sonarr=Sonarr(self.store,config=config);self.organizer=Organizer(self.store,self.workflow,self.catalog,self.sonarr)
+        self.library=Library(self.store,self.workflow,catalog=self.catalog)
+        self.batch=Batch(self.catalog,self.workflow,self.library)
         if self.auth.setup_required() and not config.setup_token and not self.store.setting('setup_token'):
             self.store.set_setting('setup_token',secrets.token_urlsafe(32))
-        self.stop_event=threading.Event();self.worker=None
+        self.stop_event=threading.Event();self.worker=None;self.library_worker=None
 
     def start_worker(self):
         if hasattr(self.catalog,'start_updates'):self.catalog.start_updates()
@@ -51,10 +56,17 @@ class Application:
                     print('Worker iteration failed; durable task state retained.',flush=True)
                 self.stop_event.wait(max(1,self.config.worker_interval))
         self.worker=threading.Thread(target=run,name='mikan115-worker',daemon=True);self.worker.start()
+        def run_library():
+            while not self.stop_event.is_set():
+                try:self.rss.enqueue_downloads(self.library);self.library.tick()
+                except Exception:print('Library worker failed; durable task state retained.',flush=True)
+                self.stop_event.wait(max(1,self.config.worker_interval))
+        self.library_worker=threading.Thread(target=run_library,name='mikan115-library',daemon=True);self.library_worker.start()
 
     def close(self):
         self.stop_event.set()
         if self.worker:self.worker.join(timeout=25)
+        if self.library_worker:self.library_worker.join(timeout=2)
         self.rss.close()
         if hasattr(self.catalog,'close'):self.catalog.close()
 
@@ -173,6 +185,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.send_json({'favorite':bool(found),'canonicalId':wid})
             if path=='/api/quota':
                 s=self.app.auth.session(self.session_token());return self.send_json({'authenticated':bool(s),'used':0,'remaining':None,'limit':None,'approval_required':False})
+            if path=='/api/library' and 'mikan_ids' in q:
+                user=self.session()
+                ids=q['mikan_ids'].split(',')
+                if len(ids)>500:raise AppError('INVALID_LIBRARY_IDS','一次最多查询 500 部作品')
+                return self.send_json(self.app.library.summary(user,list(dict.fromkeys(Batch.source_id(i) for i in ids))))
             if path in ('/api/transfers','/api/my-requests','/api/library'):
                 user=self.session();tasks=self.app.workflow.list(user)
                 if path=='/api/library':return self.send_json({'items':tasks,'series':[],'count':len(tasks),'source':'115'})
@@ -181,6 +198,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if m:return self.send_json(self.app.workflow.get(self.session(),m[1]))
             m=re.fullmatch(r'/api/transfers/([a-f0-9]{32})/download/([a-f0-9]{32})',path)
             if m:return self.send_download(self.session(),m[1],m[2])
+            m=re.fullmatch(r'/api/tasks/([a-f0-9]{32})/vps-download',path)
+            if m:return self.send_json(self.app.library.task(self.session(),m[1]))
             if path=='/api/subscriptions':return self.send_json({'subscriptions':self.app.rss.list(self.session(),q.get('scope')=='all'),'settings':self.app.rss.settings()})
             if path=='/api/subscriptions/options':
                 self.session();return self.send_json(self.app.rss.options(q.get('work_id',''),q.get('bangumi_id')))
@@ -250,7 +269,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.session(admin=True)
                 allowed={'cookie','cookie_source','alist_password','alist_token'}
                 if set(data)-allowed:raise AppError('INVALID_CONNECTION_FIELDS','连接设置包含不允许的字段')
-                return self.send_json(self.app.workflow.bind(data.get('cookie',''),cookie_source=data.get('cookie_source','third_party'),alist_password=data.get('alist_password',''),alist_token=data.get('alist_token','')))
+                return self.send_json(self.app.workflow.bind(data.get('cookie',''),cookie_source=data.get('cookie_source'),alist_password=data.get('alist_password',''),alist_token=data.get('alist_token','')))
             if path=='/api/settings/metadata':
                 self.session(admin=True)
                 if set(data)-{'tmdb_credential','clear_tmdb'}:raise AppError('INVALID_METADATA_FIELDS','设置无效')
@@ -259,12 +278,37 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.session(admin=True);return self.send_json(self.app.sonarr.configure(data))
             if path=='/api/settings/following':
                 self.session(admin=True);return self.send_json(self.app.rss.configure(data))
+            if path=='/api/library/actions':
+                return self.send_json(self.app.batch.action(user,data),202 if 'digest' in data else 200)
+            if path=='/api/library/downloads':
+                ids=data.get('task_ids')
+                if set(data)!={'task_ids'} or not isinstance(ids,list) or not 1<=len(ids)<=100 or any(
+                        not isinstance(tid,str) or not re.fullmatch('[a-f0-9]{32}',tid) for tid in ids):
+                    raise AppError('INVALID_LIBRARY_TASKS','请选择要下载的转存任务')
+                tasks=[];failed=[]
+                for tid in dict.fromkeys(ids):
+                    try:tasks.append(self.app.library.enqueue(user,tid,{}))
+                    except AppError as error:failed.append({'transfer_id':tid,'code':error.code,'message':error.message})
+                return self.send_json({'tasks':tasks,'failed':failed},202)
+            m=re.fullmatch(r'/api/tasks/([a-f0-9]{32})/vps-download',path)
+            if m:
+                if set(data)-{'file_ids'}:raise AppError('INVALID_LIBRARY_FILES','请选择要下载的文件')
+                return self.send_json(self.app.library.enqueue(user,m[1],data),202)
             if path=='/api/transfers':
                 if set(data)&{'cid','folder_id','wp_path_id','path','mount_path','task_path','root_cid'}:raise AppError('FOLDER_OVERRIDE_FORBIDDEN','普通转存请求不能指定或改变目标目录',403)
+                if 'release_ids' in data:
+                    if set(data)-{'mikan_id','release_ids'}:raise AppError('INVALID_RELEASES','批量转存参数无效')
+                    return self.send_json(self.app.batch.selected(user,data.get('mikan_id'),data['release_ids']),202)
+                naming=None
                 if data.get('magnet'):
                     magnet,title,work_id=data['magnet'],data.get('title',''),data.get('work_id','')
-                else:magnet,title,work_id=self.app.catalog.resolve_resource(data)
-                task=self.app.workflow.create(user,magnet,title,work_id)
+                else:
+                    magnet,title,work_id=self.app.catalog.resolve_resource(data)
+                    bid=str(data.get('bangumi_id') or (work_id if str(work_id).isdigit() else ''))
+                    if bid.isdigit():
+                        naming={'work_id':work_id,'bangumi_id':bid,'resource_hash':str(data.get('resource_hash') or '').lower(),
+                                'rules':{},'release':releases.parse(title)}
+                task=self.app.workflow.create(user,magnet,title,work_id,naming=naming)
                 return self.send_json({'success':True,'approval_required':False,'task':task},202)
             m=re.fullmatch(r'/api/transfers/([a-f0-9]{32})/(refresh|retry)',path)
             if m:

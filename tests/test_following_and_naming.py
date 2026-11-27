@@ -16,6 +16,9 @@ class Labels(unittest.TestCase):
         self.assertEqual(releases.parse('[组] 动画 - 03v2 [简中]')['episodes'],[3])
         self.assertEqual(releases.parse('[组] 动画 - 03v2 [简中]')['revision'],2)
         self.assertEqual(releases.parse('[组] 动画 [01-12] [1080p]')['episodes'],list(range(1,13)))
+        self.assertEqual(releases.parse('Show S02E01–E12 [1080p]')['episodes'],list(range(1,13)))
+        self.assertEqual(releases.parse('Show [全12话]')['episodes'],list(range(1,13)))
+        self.assertEqual(releases.parse('Show S02E01-1080p')['episodes'],[1])
         self.assertEqual(releases.parse('Show [1080p] [2026]')['episodes'],[])
     def test_keyword_rules_are_literal_and_batches_require_opt_in(self):
         item={'title':'[组] 动画 [01-12] [1080p][简中]','release':releases.parse('[组] 动画 [01-12] [1080p][简中]')}
@@ -74,6 +77,12 @@ class Following(Harness):
         def reject(*args,**kwargs):raise AssertionError('Unnecessary upstream request')
         self.catalog.fetch=reject
         self.assertEqual(self.app.rss.identify(item)['release']['group_id'],'7')
+    def test_rss_item_carries_only_confirmed_tmdb_tvdb_crosswalk(self):
+        self.catalog.seed_rows=lambda *args,**kwargs:[{'mikan_id':'236','tmdb_mapping':{'status':'linked','type':'tv','id':77},'tmdb_season':2,
+                                                        'provider_ids':{'bangumi':'236','tmdb':'77','tvdb':'1234'},'tvdb_season':3}]
+        item={'key':'key','bangumi_id':'236','release':releases.parse('[测试字幕组] 测试动漫 - 01')}
+        identified=self.app.rss.identify(item)
+        self.assertEqual(identified['provider_crosswalk'],{'bangumi':'236','tmdb':{'type':'tv','id':'77','season':2},'tvdb':{'id':'1234','season':3}})
     def sub(self,rule=None,sg='0'):
         self.state.rss_items=[]
         result=self.app.rss.create(self.user,{'bangumi_id':'236','subgroup_id':sg,'rules':rule or {}})
@@ -105,6 +114,31 @@ class Following(Harness):
         from mikan115.following import RSS
         self.app.rss=RSS(self.store,self.config,self.catalog,self.app.workflow)
         self.state.rss_items=[self.item('c')];self.app.rss.poll(b);self.assertEqual(self.state.submit_count,1)
+    def test_rss_opt_in_runs_separate_vps_download_after_rename(self):
+        self.bind()
+        self.catalog.save_works([{'id':'mikan:236','mikan_id':'236','title':'测试动漫','tmdb_id':77,
+                                  'tmdb_season':2,'tmdb_mapping':{'status':'linked','id':77,'type':'tv','season':2},
+                                  'provider_ids':{'tvdb':'123'},'episodes':[
+                                      {'season_number':2,'episode_number':1,'air_date':'2020-01-01'}]}])
+        sub=self.sub({'download_to_vps':True,'rename':True})
+        self.state.rss_items=[self.item('b')]
+        self.app.rss.poll(sub)
+        task=self.store.one('SELECT * FROM transfers')
+        self.assertEqual(self.state.submit_count,1)
+        self.state.complete()
+        self.app.workflow.poll(task['id'])
+        self.app.rss.enqueue_downloads(self.app.library)
+        self.assertEqual(self.app.library.task(self.user,task['id'])['state'],'IDLE')
+        self.app.organizer.tick()
+        self.assertEqual(self.state.rename_count,1)
+        self.app.rss.enqueue_downloads(self.app.library)
+        self.app.rss.enqueue_downloads(self.app.library)
+        self.app.library.tick()
+        local=self.app.library.task(self.user,task['id'])
+        self.assertEqual(local['status'].upper(),'COMPLETE')
+        self.assertEqual(len(self.store.all('SELECT * FROM library_tasks')),1)
+        self.assertEqual([file.read_bytes() for file in self.app.library.root.rglob('*.mp4')],[PAYLOAD])
+        self.assertIn('S02E01',local['files'][0]['name'])
     def test_same_guid_changed_hash_is_new_but_same_hash_changed_guid_is_not(self):
         self.bind();sub=self.sub();item=self.item('b');item['guid']='first';self.state.rss_items=[item];self.app.rss.poll(sub)
         self.state.rss_items=[{**item,'guid':'changed'}];self.app.rss.poll(sub);self.assertEqual(self.state.submit_count,1)
@@ -142,6 +176,14 @@ class Following(Harness):
         status,_,_=self.request('POST','/api/subscriptions',{'bangumi_id':'236'},csrf=False);self.assertEqual(status,403)
 
 class Naming(Harness):
+    def test_tmdb_episode_fallback_requires_exact_link_and_episode(self):
+        from mikan115.organizer import Organizer
+        work={'tmdb_id':77,'tmdb_mapping':{'status':'linked','type':'tv','id':77,'season':2},
+              'episodes':[{'season_number':2,'episode_number':3}]}
+        self.assertTrue(Organizer.tmdb_episode_confirmed(work,2,3))
+        self.assertFalse(Organizer.tmdb_episode_confirmed(work,2,4))
+        self.assertFalse(Organizer.tmdb_episode_confirmed({**work,'tmdb_mapping':{'status':'season_ambiguous'}},2,3))
+
     def ready(self):
         self.bind();self.catalog.save_works([{'id':'test-work','mikan_id':'236','title':'测试动漫','tmdb_season':2,'tmdb_mapping':{'status':'linked'},'provider_ids':{'tvdb':'123'}}])
         job=self.app.workflow.create(self.user,'magnet:?xt=urn:btih:'+HASH,'[测试字幕组] 测试动漫 - 01 [简日][1080p]','test-work')
@@ -202,12 +244,40 @@ class Naming(Harness):
         plan=self.app.organizer.preview(self.user,job['id']);self.assertEqual(len(plan['files']),1);self.assertIn('S02E09',plan['files'][0]['new_name'])
 
 class SonarrContract(unittest.TestCase):
+    def test_http_sonarr_lookup_accepts_only_explicit_json_array_mode(self):
+        from mikan115.http_client import HTTP
+        class Raw(HTTP):
+            def bytes(self,method,url,**kwargs):return b'[{"tvdbId":123}]'
+        http=Raw()
+        with self.assertRaises(ProviderError):http.json('GET','http://sonarr/api/v3/series/lookup')
+        self.assertEqual(http.json('GET','http://sonarr/api/v3/series/lookup',allow_list=True),[{'tvdbId':123}])
+
+    def test_managed_credentials_are_runtime_only_and_empty_library_is_safe(self):
+        class Mock:
+            def __init__(self):self.paths=[]
+            def json(self,method,url,headers,**kwargs):
+                self.paths.append(url)
+                if '/series/lookup' in url:return [{'tvdbId':123,'id':7,'title':'Show'}]
+                return {'parsedEpisodeInfo':{'seasonNumber':2,'episodeNumbers':[3]}}
+        with tempfile.TemporaryDirectory() as folder:
+            store=Store(pathlib.Path(folder));http=Mock()
+            from types import SimpleNamespace
+            config=SimpleNamespace(sonarr_managed=True,sonarr_url='http://sonarr:8989',
+                                   sonarr_api_key='runtime-only-key-123456',sonarr_api_version='v3')
+            sonarr=Sonarr(store,http,config=config)
+            status=sonarr.status();self.assertTrue(status['configured']);self.assertTrue(status['managed'])
+            self.assertNotIn('runtime-only-key',json.dumps(status));self.assertIsNone(store.setting('sonarr_credentials'))
+            result=sonarr.verify('Show S02E03',{'provider_ids':{'tvdb':'123'}},2,3)
+            self.assertIsNone(result['series_id']);self.assertTrue(result['read_only'])
+            self.assertEqual(len(http.paths),2);self.assertIn('/series/lookup?term=tvdb%3A123',http.paths[0])
+
     def test_configuration_encrypted_and_exact_tvdb_episode_required(self):
         class Mock:
             tvdb=123
-            def json(self,method,url,headers):
+            def json(self,method,url,headers,**kwargs):
                 self.headers=headers
                 if '/system/status' in url:return {'appName':'Sonarr','version':'4.0.0'}
+                if '/series/lookup' in url:return [{'tvdbId':self.tvdb,'id':7,'title':'Show'}]
                 return {'series':{'tvdbId':self.tvdb,'id':7},'parsedEpisodeInfo':{'seasonNumber':2,'episodeNumbers':[3]}}
         with tempfile.TemporaryDirectory() as folder:
             store=Store(pathlib.Path(folder));http=Mock();sonarr=Sonarr(store,http);key='artificial-sonarr-key-123456'
@@ -216,3 +286,14 @@ class SonarrContract(unittest.TestCase):
             http.tvdb=999
             with self.assertRaises(AppError):sonarr.verify('Show S02E03',work,2,3)
             self.assertEqual(http.headers['X-Api-Key'],key)
+
+    def test_tvdb_season_is_used_when_crosswalk_differs_from_tmdb_season(self):
+        class Mock:
+            def json(self,method,url,headers,**kwargs):
+                if '/series/lookup' in url:return [{'tvdbId':123,'id':7,'title':'Show'}]
+                return {'series':{'tvdbId':123,'id':7},'parsedEpisodeInfo':{'seasonNumber':3,'episodeNumbers':[3]}}
+        with tempfile.TemporaryDirectory() as folder:
+            store=Store(pathlib.Path(folder));sonarr=Sonarr(store,Mock())
+            store.set_setting('sonarr_credentials',store.encrypt(json.dumps({'url':'http://sonarr:8989','api_key':'artificial-sonarr-key-123456','api_version':'v3'})))
+            result=sonarr.verify('Show S02E03',{'provider_ids':{'tvdb':'123'},'tvdb_season':3},2,3)
+            self.assertEqual(result['season'],3);self.assertTrue(result['read_only'])

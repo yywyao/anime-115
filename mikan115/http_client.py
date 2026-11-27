@@ -43,10 +43,11 @@ class HTTP:
             if len(raw)>limit:raise ProviderError('UPSTREAM_TOO_LARGE','上游响应超过大小限制')
             return raw
 
-    def json(self,method,url,**kwargs):
+    def json(self,method,url,*,allow_list=False,**kwargs):
         try:
             data=json.loads(self.bytes(method,url,**kwargs))
         except (ValueError,UnicodeError):
             raise ProviderError('UPSTREAM_INVALID_JSON','上游返回数据格式异常',uncertain=method not in ('GET','HEAD'))
-        if not isinstance(data,dict):raise ProviderError('UPSTREAM_INVALID_JSON','上游返回数据格式异常',uncertain=method not in ('GET','HEAD'))
+        if not isinstance(data,(dict,list)) or (isinstance(data,list) and not allow_list):
+            raise ProviderError('UPSTREAM_INVALID_JSON','上游返回数据格式异常',uncertain=method not in ('GET','HEAD'))
         return data

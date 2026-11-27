@@ -11,6 +11,16 @@ def clean(text,limit=100):
 
 class Organizer:
     def __init__(self,store,workflow,catalog,sonarr):self.store=store;self.workflow=workflow;self.catalog=catalog;self.sonarr=sonarr
+    @staticmethod
+    def tmdb_episode_confirmed(work,season,episode):
+        mapping=work.get('tmdb_mapping') or {};ids=work.get('provider_ids') or {}
+        ident=work.get('tmdb_id') or ids.get('tmdb')
+        if mapping.get('status') not in {'linked','episode_scope'} or mapping.get('type')!='tv':return False
+        if not str(ident or '').isdigit() or str(mapping.get('id'))!=str(ident):return False
+        if mapping.get('season') is not None and int(mapping['season'])!=int(season):return False
+        matches=[item for item in work.get('episodes') or []
+                 if str(item.get('season_number'))==str(season) and str(item.get('episode_number'))==str(episode)]
+        return len(matches)==1
     def authorize(self,user,tid):
         task=self.workflow.authorize(user,tid)
         if not user['is_admin'] and self.store.one('SELECT count(*) n FROM transfer_owners WHERE transfer_id=?',(tid,))['n']>1:raise AppError('SHARED_TASK','共享任务请由管理员改名',403)
@@ -39,7 +49,10 @@ class Organizer:
             if parsed['season'] is not None and parsed['season']!=season:skipped.append({'name':f['name'],'reason':'季号不一致'});continue
             ep=episodes[0]
             if not 0<=ep<=9999:skipped.append({'name':f['name'],'reason':'集号偏移无效'});continue
-            self.sonarr.verify(f'{work.get("title_original") or work["title"]} S{season:02d}E{ep:02d}',work,season,ep)
+            verified=self.sonarr.verify(f'{work.get("title_original") or work["title"]} S{season:02d}E{ep:02d}',work,season,ep)
+            if verified is None and self.sonarr.status().get('configured') and not self.tmdb_episode_confirmed(work,season,ep):
+                skipped.append({'name':f['name'],'reason':'缺少已确认的 TMDB 集号'})
+                continue
             tag=release if release.get('version')!='unknown' else parsed
             tokens=[release.get('group') or parsed.get('group'),releases.VERSIONS.get(tag.get('version')) if tag.get('version') not in (None,'unknown') else '',tag.get('resolution') if tag.get('resolution') not in (None,'unknown') else '']
             base=clean(work['title'])+f' - S{season:02d}E{ep:02d}'

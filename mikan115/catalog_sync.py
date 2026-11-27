@@ -95,13 +95,19 @@ class CrossReferences:
             self.bg_records.append(record)
             for p,ident in ids.items():register(p,ident,record)
         for row in fribb:
-            ids={p:identifier(row.get(k)) for p,k in [('anilist','anilist_id'),('mal','mal_id')]};ids={p:v for p,v in ids.items() if v}
+            ids={p:identifier(row.get(k)) for p,k in [('anilist','anilist_id'),('mal','mal_id'),('tvdb','tvdb_id')]};ids={p:v for p,v in ids.items() if v}
             t=row.get('themoviedb_id') or {};values=[]
             if isinstance(t,dict):
                 if t.get('tv'):values.append(target('tv',t['tv'],(row.get('season') or {}).get('tmdb')))
                 movies=t.get('movie') or []
                 for ident in movies if isinstance(movies,list) else [movies]:values.append(target('movie',ident))
             record={'ids':ids,'aliases':[],'targets':unique_targets(values),'source':'Fribb/anime-lists'}
+            # TVDB is carried only when it belongs to the same exact mapping
+            # record as the TMDB target. It is never inferred from a title.
+            tvdb_season=(row.get('season') or {}).get('tvdb')
+            try:tvdb_season=int(tvdb_season) if tvdb_season is not None else None
+            except (TypeError,ValueError):tvdb_season=None
+            record['tvdb_season']=tvdb_season
             for p,ident in ids.items():register(p,ident,record)
         for row in subjects.get('subjects',[]):
             bid=identifier(row.get('bangumiId'));values=[];episode_only=[]
@@ -187,6 +193,20 @@ class CrossReferences:
                         out['tmdb_mapping']['episode']=episode
             if len(seasons)==1 and out['tmdb_mapping']['status'] in {'linked','episode_scope'}:out['tmdb_season']=next(iter(seasons))
             else:out.pop('tmdb_season',None)
+            # A TVDB season is a separate namespace. Keep it only when the
+            # exact crosswalk record gives one unambiguous value.
+            tvdb_values={r.get('tvdb_season') for r in rows
+                         if r.get('ids',{}).get('tvdb') and r.get('ids',{}).get('tvdb')==ids.get('tvdb')
+                         and any(t.get('type')==kind and str(t.get('id'))==str(ident) for t in r.get('targets',[]))
+                         and r.get('tvdb_season') is not None}
+            if kind=='tv' and ids.get('tvdb') and len(tvdb_values)==1 and out['tmdb_mapping']['status'] in {'linked','episode_scope'}:
+                out['tvdb_season']=next(iter(tvdb_values))
+                out['tvdb_mapping']={'source':'Fribb/anime-lists','id':str(ids['tvdb']),
+                                     'season':out['tvdb_season'],'tmdb_id':ident,
+                                     'tmdb_season':out.get('tmdb_season')}
+            else:
+                out.pop('tvdb_season',None)
+                if (out.get('tvdb_mapping') or {}).get('source')=='Fribb/anime-lists':out.pop('tvdb_mapping',None)
         elif len(types)>1:
             out['tmdb_link_conflict']=True;out.pop('tmdb_season',None)
         return out

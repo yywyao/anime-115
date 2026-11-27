@@ -7,4 +7,5 @@ if [ ! -f data/.mikan115-initialized ]; then
   ./alist admin set "$ALIST_PASSWORD" >/dev/null 2>&1
   touch data/.mikan115-initialized
 fi
+unset ALIST_PASSWORD
 exec ./alist server --no-prefix

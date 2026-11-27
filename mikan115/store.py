@@ -87,6 +87,11 @@ CREATE TABLE IF NOT EXISTS subscription_claims (
 CREATE TABLE IF NOT EXISTS transfer_naming (
  transfer_id TEXT PRIMARY KEY REFERENCES transfers(id),metadata TEXT NOT NULL,auto_rename INTEGER NOT NULL DEFAULT 0,
  status TEXT NOT NULL DEFAULT 'PENDING',error TEXT,updated_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS following_downloads (
+ subscription_id TEXT NOT NULL REFERENCES subscriptions(id), transfer_id TEXT NOT NULL REFERENCES transfers(id),
+ revision INTEGER NOT NULL, submitted INTEGER NOT NULL DEFAULT 0, next_retry REAL NOT NULL DEFAULT 0,
+ PRIMARY KEY(subscription_id,transfer_id));
+CREATE INDEX IF NOT EXISTS following_download_pending ON following_downloads(submitted,next_retry);
 CREATE TABLE IF NOT EXISTS rename_operations (
  transfer_id TEXT NOT NULL REFERENCES transfers(id),file_id TEXT NOT NULL,old_path TEXT NOT NULL,new_path TEXT NOT NULL,
  size INTEGER NOT NULL,status TEXT NOT NULL,updated_at REAL NOT NULL,remote_id TEXT NOT NULL,parent_cid TEXT NOT NULL,

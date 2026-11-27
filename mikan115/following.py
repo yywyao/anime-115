@@ -97,7 +97,21 @@ class RSS:
             if row:r['group']=row['name']
         if bid:
             rows=self.catalog.seed_rows('WHERE mikan_id=?',(bid,),1)
-            if rows and (rows[0].get('tmdb_mapping') or {}).get('status')=='linked' and rows[0].get('tmdb_season') is not None:out['identity_season']=rows[0]['tmdb_season']
+            if rows:
+                work=rows[0];mapping=work.get('tmdb_mapping') or {};status=mapping.get('status')
+                # RSS resources inherit only an exact, already-confirmed
+                # catalog crosswalk. Parsed titles and fuzzy similarity never
+                # establish TMDB/TVDB identity.
+                if status in {'linked','episode_scope'} and str(mapping.get('id') or '').isdigit():
+                    providers=work.get('provider_ids') or {}
+                    crosswalk={'bangumi':bid,'tmdb':{'type':mapping.get('type') or 'tv','id':str(mapping['id'])}}
+                    if work.get('tmdb_season') is not None:crosswalk['tmdb']['season']=work['tmdb_season']
+                    tvdb=str(providers.get('tvdb') or '')
+                    if tvdb.isdigit():
+                        crosswalk['tvdb']={'id':tvdb}
+                        if work.get('tvdb_season') is not None:crosswalk['tvdb']['season']=work['tvdb_season']
+                    out['provider_crosswalk']=crosswalk
+                    if work.get('tmdb_season') is not None:out['identity_season']=work['tmdb_season']
         return out
 
     def read(self,sub):
@@ -201,7 +215,7 @@ class RSS:
             duplicate=any(k in seen or self.store.one('SELECT 1 n FROM subscription_claims WHERE user_id=? AND episode_key=?',(sub.get('user_id',user['id']),k)) for k in keys)
             if item['admitted'] and duplicate:item.update(admitted=False,reason='重复剧集')
             if item['admitted']:seen.update(keys)
-        return {'items':[{k:v for k,v in i.items() if k in {'key','title','release','admitted','reason','previous','bangumi_id'}} for i in rows],'dry_run':True}
+        return {'items':[{k:v for k,v in i.items() if k in {'key','title','release','admitted','reason','previous','bangumi_id','provider_crosswalk'}} for i in rows],'dry_run':True}
 
     def history(self,user,sid):
         self.authorize(user,sid)
@@ -256,11 +270,39 @@ class RSS:
                             c.execute('UPDATE subscription_claims SET transfer_id=? WHERE user_id=? AND subscription_id=? AND item_key=?',(job['id'],user['id'],sub['id'],item['key']))
                             metadata={'release':item['release'],'rules':rule,'work_id':sub['work_id'] or item['bangumi_id'],'bangumi_id':item['bangumi_id']}
                             c.execute('INSERT OR IGNORE INTO transfer_naming VALUES(?,?,?,?,?,?)',(job['id'],json.dumps(metadata,ensure_ascii=False),int(rule['rename']),'PENDING',None,time.time()))
+                            if rule['download_to_vps']:
+                                c.execute('INSERT OR IGNORE INTO following_downloads(subscription_id,transfer_id,revision) VALUES(?,?,?)',
+                                          (sub['id'],job['id'],sub['revision']))
                         self.decision(sub['id'],item['key'],'TRANSFERRED','已创建转存',job['id'])
                     except AppError as e:self.decision(sub['id'],item['key'],'ERROR',e.message)
                 with self.store.transaction() as c:c.execute('UPDATE subscriptions SET last_polled=?,last_error=NULL WHERE id=?',(time.time(),sub['id']))
             except AppError as e:
                 with self.store.transaction() as c:c.execute('UPDATE subscriptions SET last_polled=?,last_error=? WHERE id=?',(time.time(),e.message,sub['id']))
+
+    def enqueue_downloads(self,library):
+        if self.settings()['paused']:return
+        with self.lock:
+            pending=self.store.all("""SELECT d.subscription_id,d.transfer_id,d.revision,u.id,u.is_admin
+                FROM following_downloads d JOIN subscriptions s ON s.id=d.subscription_id
+                JOIN transfers t ON t.id=d.transfer_id JOIN users u ON u.id=s.user_id
+                LEFT JOIN transfer_naming n ON n.transfer_id=t.id
+                WHERE d.submitted=0 AND d.next_retry<=? AND s.enabled=1 AND s.removed=0 AND s.revision=d.revision
+                AND t.state='FILES_READY' AND u.disabled=0 AND (n.auto_rename IS NOT 1 OR n.status!='PENDING')
+                ORDER BY d.rowid LIMIT 10""",(time.time(),))
+            for row in pending:
+                if self.settings()['paused']:return
+                sub=self.store.one('SELECT enabled,removed,revision FROM subscriptions WHERE id=?',(row['subscription_id'],))
+                if not sub or not sub['enabled'] or sub['removed'] or sub['revision']!=row['revision']:continue
+                try:
+                    queued=library.enqueue({'id':row['id'],'is_admin':row['is_admin']},row['transfer_id'],{},
+                                           following=(row['subscription_id'],row['revision']))
+                except AppError:
+                    with self.store.transaction() as c:c.execute('UPDATE following_downloads SET next_retry=? WHERE subscription_id=? AND transfer_id=?',
+                              (time.time()+60,row['subscription_id'],row['transfer_id']))
+                else:
+                    if queued is None:continue
+                    with self.store.transaction() as c:c.execute('UPDATE following_downloads SET submitted=1 WHERE subscription_id=? AND transfer_id=?',
+                              (row['subscription_id'],row['transfer_id']))
 
     def tick(self):
         settings=self.settings()

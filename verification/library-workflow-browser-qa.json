@@ -1,0 +1,24 @@
+{
+  "success": true,
+  "results": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "cloud_queue": true,
+      "independent_vps_job": true,
+      "home_library_overlays_absent": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "cloud_queue": true,
+      "independent_vps_job": true,
+      "home_library_overlays_absent": true
+    }
+  ],
+  "scope": "Isolated browser flows with simulated transfer and download services."
+}

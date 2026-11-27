@@ -9,7 +9,8 @@ def normalize_cookie(raw):
     if not isinstance(raw,str) or len(raw)>16384 or any(ord(x)<32 or ord(x)==127 for x in raw):
         raise AppError('INVALID_COOKIE','CK 格式不正确，不能包含换行或控制字符')
     pairs={}
-    for part in raw.strip().split(';'):
+    raw=re.sub(r'^Cookie:[ ]*','',raw.strip(),flags=re.I)
+    for part in raw.split(';'):
         part=part.strip()
         if not part:continue
         if '=' not in part:raise AppError('INVALID_COOKIE','CK 格式不正确')

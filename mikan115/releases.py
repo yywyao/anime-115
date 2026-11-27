@@ -4,10 +4,10 @@ import unicodedata
 from .errors import AppError
 
 VERSIONS={'chs':'简中','cht':'繁中','chs-ja':'简日','cht-ja':'繁日','chs-cht':'简繁','chs-cht-ja':'简繁日','zh-ja':'中日','ja':'日文','none':'无字幕','unknown':'未标注'}
-DEFAULT_RULES={'group_ids':[],'versions':[],'resolutions':[],'include':[],'exclude':[],'dedupe':'episode','wait_minutes':0,'allow_batches':False,'min_episode':None,'max_episode':None,'rename':False,'season':None,'episode_offset':0,'episode_title':False}
+DEFAULT_RULES={'group_ids':[],'versions':[],'resolutions':[],'include':[],'exclude':[],'dedupe':'episode','wait_minutes':0,'allow_batches':False,'min_episode':None,'max_episode':None,'rename':False,'season':None,'episode_offset':0,'episode_title':False,'download_to_vps':False}
 
 def parse(title,group_id='',group_name=''):
-    title=unicodedata.normalize('NFKC',str(title or ''))[:500];lower=title.casefold()
+    title=unicodedata.normalize('NFKC',str(title or ''))[:500].replace('–','-').replace('—','-');lower=title.casefold()
     lower=re.sub(r'(?<=[简簡繁中])[\s_/&+|、,·-]+(?=[简簡繁日中])','',lower)
     def has(pattern):return bool(re.search(pattern,lower,re.I))
     chs=has(r'简[体中日繁]|簡[体體中日繁]|简繁|簡繁|(?<![a-z])(?:chs|sc|gb|gb2312)(?![a-z])')
@@ -21,15 +21,21 @@ def parse(title,group_id='',group_name=''):
     resolution=next((v for p,v in [(r'2160[pi]|\b4k\b','2160p'),(r'1080[pi]|1920\s*[x×]\s*1080','1080p'),(r'720[pi]|1280\s*[x×]\s*720','720p'),(r'480[pi]','480p')] if has(p)),'unknown')
     mode='external' if has(r'外挂|外掛|external') else 'soft' if has(r'内封|內封|softsub') else 'hard' if has(r'内嵌|內嵌|hardsub') else 'unknown'
     season=None;episodes=[];explicit=False
-    match=re.search(r'\bS(\d{1,2})[ ._-]*E(\d{1,4})(?:[ ._-]*E(\d{1,4}))?',title,re.I)
+    match=re.search(r'\bS(\d{1,2})[ ._-]*E(\d{1,4})(?:(\s*[-~至]\s*)E?(\d{1,4})(?![A-Za-z0-9])|[ ._]*E(\d{1,4}))?',title,re.I)
     if match:
-        season=int(match[1]);episodes=[int(match[2])]+([int(match[3])] if match[3] else []);explicit=True
+        season=int(match[1]);start=int(match[2]);explicit=True
+        if match[4]:
+            end=int(match[4])
+            if start<=end<=start+500:episodes=list(range(start,end+1))
+        else:episodes=sorted({start,int(match[5] or start)})
     else:
         match=re.search(r'(?:第\s*|\b(?:episode|ep|e)[ ._-]*)(\d{1,4})(?:\s*[-~至]\s*(\d{1,4}))?\s*(?:集|话|話|\b)',title,re.I)
         if not match:match=re.search(r'(?:\s-\s*|[\[【])(\d{1,3})(?:\s*[-~至]\s*(\d{1,3}))?(?=v\d|[\]】\s_.(]|$)',title,re.I)
         if match:
             start=int(match[1]);end=int(match[2]) if match[2] else start
-            if start<=end<=start+100:episodes=list(range(start,end+1))
+            if start<=end<=start+500:episodes=list(range(start,end+1))
+    full=re.search(r'全\s*(\d{1,3})\s*[集话話]',title)
+    if full and not episodes and 1<=int(full[1])<=500:episodes=list(range(1,int(full[1])+1))
     batch=len(episodes)>1 or has(r'全集|合集|合辑|合集|\b(?:batch|complete)\b|全\s*\d+\s*[话話集]')
     revision=re.search(r'(?:\b\d{1,3}|[\]】 ])v(\d)\b',lower)
     first=re.match(r'^[\[【]([^\]】]+)[\]】]',title)
@@ -53,7 +59,7 @@ def rules(value=None):
         if v is None and key in {'season','min_episode','max_episode'}:continue
         if isinstance(v,bool) or not isinstance(v,int) or not low<=v<=high:raise AppError('INVALID_RULES','集数或等待时间无效')
     if out['min_episode'] is not None and out['max_episode'] is not None and out['min_episode']>out['max_episode']:raise AppError('INVALID_RULES','起始集数不能大于结束集数')
-    for key in ['allow_batches','rename','episode_title']:
+    for key in ['allow_batches','rename','episode_title','download_to_vps']:
         if not isinstance(out[key],bool):raise AppError('INVALID_RULES','规则开关无效')
     return out
 

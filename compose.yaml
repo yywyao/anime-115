@@ -11,8 +11,12 @@ services:
       MIKAN_SECURE_COOKIE: "${MIKAN_SECURE_COOKIE:-0}"
       ALIST_URL: http://alist:5244
       ALIST_USERNAME: admin
+      ALIST_MANAGED: "1"
       ALIST_PASSWORD: "${ALIST_PASSWORD:?Run python3 tools/configure.py first}"
       MIKAN_URL: "${MIKAN_URL:-https://mikanani.me}"
+      SONARR_MANAGED: "${SONARR_MANAGED:-0}"
+      SONARR_URL: "${SONARR_URL:-http://sonarr:8989}"
+      SONARR_API_VERSION: "${SONARR_API_VERSION:-v3}"
     ports:
       - "127.0.0.1:${MIKAN_PORT:-8788}:8788"
     volumes:
@@ -37,10 +41,29 @@ services:
     environment:
       ALIST_PASSWORD: "${ALIST_PASSWORD:?Run python3 tools/configure.py first}"
     entrypoint: ["/bin/sh", "/mikan115-alist-start.sh"]
+    tmpfs:
+      - /opt/alist/data:mode=0700
     volumes:
-      - ./runtime/alist:/opt/alist/data
       - ./deploy/alist-start.sh:/mikan115-alist-start.sh:ro
     ports:
       - "127.0.0.1:${ALIST_PORT:-5244}:5244"
+    security_opt:
+      - no-new-privileges:true
+  sonarr:
+    profiles: ["sonarr"]
+    image: lscr.io/linuxserver/sonarr@sha256:339814bbf50599ac3b59077c252f29833d0138b59a062d0e82ce37bdc7f04f86
+    restart: unless-stopped
+    environment:
+      PUID: "${APP_UID:-10001}"
+      PGID: "${APP_GID:-10001}"
+      TZ: "${TZ:-Asia/Shanghai}"
+      MIKAN_SONARR_SECRET: "${ALIST_PASSWORD:-}"
+    entrypoint: ["/bin/sh", "/mikan115-sonarr-start.sh"]
+    volumes:
+      - ./deploy/sonarr-start.sh:/mikan115-sonarr-start.sh:ro
+    tmpfs:
+      - /config:mode=0700
+    ports:
+      - "127.0.0.1:${SONARR_PORT:-8989}:8989"
     security_opt:
       - no-new-privileges:true
