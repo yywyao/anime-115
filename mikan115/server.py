@@ -200,10 +200,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.send_json({'users':[public_user(x) for x in rows]})
             m=re.fullmatch(r'/api/tmdb/title/(tv|movie)/(\d+)',path)
             if m:
-                rows=self.app.catalog.seed_rows('WHERE json_extract(payload,\'$.tmdb_id\')=?',(int(m[2]),),1)
-                if rows:return self.send_json({'result':self.app.catalog.enrich(rows[0]),'source':'catalog'})
+                season=q.get('season')
+                if season is not None and (m[1]!='tv' or not re.fullmatch(r'[0-9]{1,5}',season)):
+                    raise AppError('INVALID_SEASON','季号不正确')
+                season=int(season) if season is not None else None
+                result=self.app.catalog.tmdb_work(m[1],m[2],season)
+                if result:return self.send_json({'result':result,'source':'catalog'})
                 if not self.app.metadata.status()['tmdb_configured']:return self.send_json({'result':{},'source':'catalog'})
-                return self.send_json({'result':self.app.metadata.title(m[1],m[2],q.get('season')),'source':'TMDB'})
+                return self.send_json({'result':self.app.metadata.title(m[1],m[2],season),'source':'TMDB'})
             if path=='/api/tmdb/search':return self.send_json({'results':[]})
             if path.startswith('/api/tmdb/person/'):
                 ident=path.rsplit('/',1)[-1]

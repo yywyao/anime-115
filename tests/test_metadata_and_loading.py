@@ -29,6 +29,8 @@ class TMDBHTTP:
         valid=q.get('api_key')==[KEY] or headers.get('Authorization')=='Bearer '+TOKEN
         if not valid:return {'success':False,'status_message':'invalid '+str(q)}
         if u.path.endswith('/authentication'):return {'success':True}
+        if '/episode/' in u.path:
+            return {'id':202,'season_number':2,'episode_number':2,'name':'番外：回家'}
         if '/season/' in u.path:
             number=int(u.path.rsplit('/',1)[1]);return {'name':f'第 {number} 季','air_date':f'202{number}-10-01',
                 'poster_path':f'/season-{number}.jpg','overview':f'第{number}季简介',
@@ -62,6 +64,7 @@ class MetadataContract(unittest.TestCase):
             self.assertTrue(result['poster_url'].endswith('/season-2.jpg'))
             self.assertEqual(result['episodes'][0]['season_number'],2)
             self.assertEqual(result['year'],2022)
+            self.assertEqual(result['tmdbTitle'],'测试剧集 · 第 2 季')
 
     def test_absent_second_season_never_borrows_first_season(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -69,12 +72,103 @@ class MetadataContract(unittest.TestCase):
             result=metadata.title('tv',77,2)
             self.assertEqual(result['poster_url'],'');self.assertEqual(result['episodes'],[])
             self.assertEqual(result['overview'],'');self.assertIsNone(result['year'])
+            self.assertNotIn('tmdbTitle',result)
+
+    def test_no_confirmed_season_only_loads_series_metadata(self):
+        with tempfile.TemporaryDirectory() as temp:
+            http=TMDBHTTP();metadata=Metadata(Store(Path(temp)),http);metadata.configure(KEY)
+            result=metadata.title('tv',77)
+            self.assertEqual(result['tmdbTitle'],'测试剧集')
+            self.assertEqual(result['episodes'],[])
+            self.assertFalse(any('/season/' in path for _,path,_,_ in http.calls))
+
+    def test_episode_scope_queries_only_the_explicit_episode(self):
+        with tempfile.TemporaryDirectory() as temp:
+            http=TMDBHTTP();metadata=Metadata(Store(Path(temp)),http);metadata.configure(KEY)
+            result=metadata.title('tv',77,2,episode=2)
+            self.assertEqual(result['tmdbTitle'],'测试剧集 · 番外：回家')
+            self.assertEqual([episode['episode_number'] for episode in result['episodes']],[2])
+            self.assertEqual(http.calls[-1][1],'/3/tv/77/season/2/episode/2')
+            with self.assertRaises(ProviderError):metadata.title('tv',77,2,episode=3)
 
     def test_special_season_zero_is_not_changed_into_first_season(self):
         with tempfile.TemporaryDirectory() as temp:
             http=TMDBHTTP();http.seasons=[0,1];metadata=Metadata(Store(Path(temp)),http);metadata.configure(KEY)
             result=metadata.title('tv',77,0)
             self.assertEqual(result['defaultSeason'],0);self.assertEqual(result['episodes'][0]['season_number'],0)
+
+class CatalogTitles(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory()
+        root=Path(self.temp.name);(root/'seed').mkdir()
+        with contextlib.closing(sqlite3.connect(root/'seed/catalog.sqlite')) as db:
+            db.execute('CREATE TABLE works(id TEXT PRIMARY KEY,mikan_id TEXT,title TEXT,year INTEGER,season TEXT,weekday INTEGER,payload TEXT)')
+            db.execute('CREATE TABLE provider_metadata(provider TEXT,external_id TEXT,payload TEXT)')
+            payload={'tmdb_id':77,'media_type':'series','title':'数据库剧名',
+                     'seasons':[{'season_number':2,'name':'新篇章'}]}
+            db.execute('INSERT INTO provider_metadata VALUES(?,?,?)',('TMDB_DETAIL','77',json.dumps(payload)))
+            db.commit()
+        self.store=Store(root/'state')
+        self.catalog=Catalog(self.store,Config(root=root,data=root/'state'))
+        def offline(*args,**kwargs):raise ProviderError()
+        self.catalog.fetch=offline
+        self.work={'id':'second','title':'蜜柑剧名','tmdb_id':77,'year':2026,'release_season':'夏',
+                   'defaultSeason':1,'tmdb_mapping':{'type':'tv','id':77,'season':2,'status':'linked'},
+                   'episodes':[{'season_number':1,'episode_number':1},{'season_number':2,'episode_number':2}]}
+
+    def tearDown(self):
+        self.catalog.close()
+        self.temp.cleanup()
+
+    def test_cached_schedule_detail_and_search_use_the_exact_title(self):
+        self.catalog.save_works([self.work])
+        old={'id':'second','title':'蜜柑剧名','tmdbTitle':'过期标题'}
+        self.store.cache_set('schedule:v2:2026:夏',{'days':[{'day':1,'items':[old]}],'bangumis':[old]})
+        for term in ('蜜柑剧名','数据库剧名','新篇章'):
+            self.assertEqual(self.catalog.search(term)['results'][0]['tmdbTitle'],'数据库剧名 · 新篇章')
+        schedule=self.catalog.schedule(2026,'夏')
+        self.assertEqual(schedule['days'][0]['items'][0]['tmdbTitle'],'数据库剧名 · 新篇章')
+        self.assertEqual(schedule['bangumis'][0]['title'],'蜜柑剧名')
+        result=self.catalog.work('second')
+        self.assertEqual(result['tmdbTitle'],'数据库剧名 · 新篇章')
+        self.assertEqual(result['defaultSeason'],2)
+        self.assertEqual([item['season_number'] for item in result['episodes']],[2])
+
+    def test_no_title_or_metadata_request_for_unresolved_scope(self):
+        self.store.set_setting('tmdb_credentials',self.store.encrypt(TOKEN))
+        for incomplete in ({'tmdb_mapping':{'status':'season_ambiguous'}},{'tmdb_mapping':{}},
+                           {'tmdb_link_conflict':True},{'media_type':'movie','tmdb_mapping':{}}):
+            work={**self.work,**incomplete}
+            self.assertNotIn('tmdbTitle',self.catalog.summary(work))
+            if incomplete.get('media_type')!='movie':
+                self.assertNotIn('metadata_pending',self.catalog.enrich(work))
+        self.assertFalse(self.catalog._inflight)
+
+    def test_tmdb_lookup_does_not_return_the_first_season_for_every_request(self):
+        first={**self.work,'id':'first','tmdb_mapping':{**self.work['tmdb_mapping'],'season':1}}
+        self.catalog.save_works([first,self.work])
+        self.assertEqual(self.catalog.tmdb_work('tv',77,1)['id'],'first')
+        self.assertEqual(self.catalog.tmdb_work('tv',77,2)['id'],'second')
+        self.assertIsNone(self.catalog.tmdb_work('tv',77,None))
+        self.assertIsNone(self.catalog.tmdb_work('movie',77,None))
+
+    def test_offline_special_title_keeps_its_exact_episode_number(self):
+        work={**self.work,'tmdb_mapping':{'type':'tv','id':77,'season':0,'episode':3,'status':'episode_scope'}}
+        result=self.catalog.enrich(work)
+        self.assertEqual(result['tmdbTitle'],'数据库剧名 · 特别篇第 3 集')
+        self.assertEqual(result['defaultSeason'],0)
+        self.assertEqual(result['episodes'],[])
+
+    def test_shared_mikan_id_cannot_switch_the_selected_season(self):
+        first={**self.work,'id':'first','mikan_id':'123','provider_ids':{'bangumi':'100'},
+               'tmdb_mapping':{**self.work['tmdb_mapping'],'season':1}}
+        second={**self.work,'mikan_id':'123','provider_ids':{'bangumi':'200'}}
+        self.catalog.save_works([first,second])
+        self.assertEqual(self.catalog.work('second')['tmdb_season'],2)
+        self.assertEqual({row['id'] for row in self.catalog.search('蜜柑剧名')['results']},{'first','second'})
+        self.assertIsNone(self.catalog.decorate({'bangumiId':'123','title':'蜜柑剧名'}).get('tmdb_id'))
+        self.catalog.fetch=lambda *args,**kwargs:'<p class="bangumi-title">第二季</p><a href="https://bangumi.tv/subject/200">Bangumi</a>'
+        self.assertEqual(self.catalog.work('123')['id'],'second')
 
 class FastHistory(unittest.TestCase):
     def setUp(self):

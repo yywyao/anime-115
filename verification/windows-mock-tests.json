@@ -1,15 +1,27 @@
 {
-  "verified_utc": "2026-11-27T04:14:59.302238+00:00",
+  "verified_utc": "2026-11-27T09:43:40.336207+00:00",
   "python": "3.12.14",
-  "tests_run": 106,
+  "tests_run": 119,
   "success": true,
   "cases": [
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_compound_subject_does_not_keep_parent_as_confirmed_work",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_conflicting_kind_with_same_tmdb_id_stays_unresolved",
+      "result": "passed"
+    },
     {
       "name": "tests.test_catalog_completion.IdentityRegression.test_conflicting_tmdb_target_keeps_existing_link",
       "result": "passed"
     },
     {
       "name": "tests.test_catalog_completion.IdentityRegression.test_corrected_source_identity_drops_stale_original_title_and_score",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_episode_scope_with_conflicting_season_does_not_keep_episode",
       "result": "passed"
     },
     {
@@ -25,7 +37,15 @@
       "result": "passed"
     },
     {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_missing_sources_preserve_existing_conflict",
+      "result": "passed"
+    },
+    {
       "name": "tests.test_catalog_completion.IdentityRegression.test_multi_film_subject_is_not_replaced_by_first_movie",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_multiple_episode_scopes_do_not_select_one_episode",
       "result": "passed"
     },
     {
@@ -38,6 +58,10 @@
     },
     {
       "name": "tests.test_catalog_completion.IdentityRegression.test_similar_title_without_explicit_source_id_is_never_merged",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_zero_episode_is_not_a_concrete_episode_scope",
       "result": "passed"
     },
     {
@@ -233,6 +257,26 @@
       "result": "passed"
     },
     {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_cached_schedule_detail_and_search_use_the_exact_title",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_no_title_or_metadata_request_for_unresolved_scope",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_offline_special_title_keeps_its_exact_episode_number",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_shared_mikan_id_cannot_switch_the_selected_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_tmdb_lookup_does_not_return_the_first_season_for_every_request",
+      "result": "passed"
+    },
+    {
       "name": "tests.test_metadata_and_loading.FastHistory.test_cached_cast_details_are_available_without_a_tmdb_key",
       "result": "passed"
     },
@@ -261,7 +305,15 @@
       "result": "passed"
     },
     {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_episode_scope_queries_only_the_explicit_episode",
+      "result": "passed"
+    },
+    {
       "name": "tests.test_metadata_and_loading.MetadataContract.test_invalid_key_does_not_replace_working_credentials_or_leak",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_no_confirmed_season_only_loads_series_metadata",
       "result": "passed"
     },
     {
@@ -437,26 +489,26 @@
   "file_hashes": {
     "mikan115/alist.py": "03baabb2611c5c45f262c7b6f40bc355f99f9a5f6e23e49841e14d8c9e25667e",
     "mikan115/auth.py": "0476fde889d03bf7aad2b65184f99c44e9812bafe9e482ee983712096aa0ec31",
-    "mikan115/catalog.py": "40758a40fbdd142da59f5a8cc4b60f00cbc710a0a81e9db071d8da4c8a2b1b3d",
-    "mikan115/catalog_sync.py": "e49cc9ba060b61704c7405faf4d7302b7dfdb9eebac3c8d332e0d89ad4c5c424",
+    "mikan115/catalog.py": "de24c12543f3711a75cc8cc16ed258cdcbec1b48fb3aef39cbda5b850bf8f501",
+    "mikan115/catalog_sync.py": "3a203ee1368b1a29520878c37b2b5a123a0c034f0abe893799a5f3ac9108cf0b",
     "mikan115/config.py": "e8fae9a9168f96b9176fba90c35876aab454f2603790737b87ff0a95fc25e773",
     "mikan115/errors.py": "0d16ff3d29664623429e5e4ea2f66962765e6a6410afe38879a8f7d530d025a6",
     "mikan115/following.py": "9c61414e898f1aa6aea08f69be1a317bebeb3dd174cb84e76772dbe613305af3",
     "mikan115/http_client.py": "b80065ac72d9b37920ea78cabfc09048657db2cba4e871e8518f62dcc1cae048",
-    "mikan115/metadata.py": "9c8cf1e82f4be885f59c1c628b5e765d69d97aba759b3ac6c71db15c5ea37e8a",
+    "mikan115/metadata.py": "e11df0755dd94e9e8cc3dcc3038d82b9ba0f091102380476c7f5b7beca00a7a4",
     "mikan115/mikan_parser.py": "f65d3c9e95b8e63ec2befee55b7b68be212f4ee52d7dcc476f12b597cb985456",
     "mikan115/organizer.py": "087a568274ddecd2f8423ee42f58749a8eeb69b41d37eb33bc86efed9795c4ed",
     "mikan115/pan115.py": "1f77663351661f0517770308adafea813e4461d6ac716d8d79bde2cda2f2b0d3",
     "mikan115/releases.py": "aeb70dba9a33f7a76f6aefa6eae147d902097fbb30ed1ac0985d31f795f41edf",
     "mikan115/rss.py": "11cbcb3dc0bdc2f35e38205f386d6c0a97908d7f2e5c61a2ecb9efdb99eda749",
-    "mikan115/search.py": "d9e8bad1aa2e97541e98baddab09725be698855c88161bbcfe8a99c83f634c44",
-    "mikan115/server.py": "911af3f1e1bd8d12571efa30590c8caf47ddda6568988e7007deef9a62474ff7",
+    "mikan115/search.py": "8f017a8e5669a43bedad32dd6b3d99a0fcb5ce31d803db892044c2fb2868fc56",
+    "mikan115/server.py": "125667375f138ac100e252d51549f4d6d09073c9b2cd5e2a1894f7db1b7b14dc",
     "mikan115/sonarr.py": "367debece101aef9f0e8757b7ec5e400c956a4c39e21327ec7f2f7a6670ec5ce",
     "mikan115/store.py": "af068c61285fdfedf695009361e177793859ba57c166f4b0e8a41f1e26be94bc",
     "mikan115/torrent.py": "c823fa17b1ed208bee27b0382096b8b11d3fa8640aa494fe0d2e11ef955cc85d",
     "mikan115/workflow.py": "ff013af67e6cde1320f33869ff1f0344abf7738e5f9164774610eb2e5212f54c",
     "mikan115/__init__.py": "76cc8c988f15dfe1edb00c35815cba83409b22cb00ba60e592a90e16b11ad8b4",
     "static/assets/mikan115-app.js": "914ae28a12936f2489e53c4ffc0dc4b154fae793999afe408e4f9767987913af",
-    "static/mikan115-ui.js": "30852f2c5c23b2243bde3823412008cc0cd73b752585366c7e5c02f9036e80c1"
+    "static/mikan115-ui.js": "1bdd4f69049c8a9afeed0466d1d0d1a74046bf9bd44365cd797e93c8a456630b"
   }
 }

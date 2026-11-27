@@ -27,6 +27,7 @@ class Catalog:
         self.metadata=metadata or Metadata(store)
         self._lock=threading.RLock();self._inflight={};self._fail_until={};self._closed=False
         self._search_index=None;self._updater=None;self._update_stop=threading.Event();self._references=None
+        self._public_tmdb=None;self._original_titles={};self._live_titles=None
         self.reconcile_public_seed()
 
     def reconcile_public_seed(self):
@@ -162,11 +163,15 @@ class Catalog:
 
     def work(self,ident):
         ident=str(ident)
-        if ident.startswith('mikan:'):ident=ident.split(':',1)[1]
         rows=self.seed_rows('WHERE id=?',(ident,),1)
-        if not rows and ident.isdigit():rows=self.seed_rows('WHERE mikan_id=?',(ident,),1)
         if rows:return self.detail_artwork(self.enrich(self.decorate(rows[0],lookup=False)))
-        if ident.isdigit():return self.detail_artwork(self.mikan_detail(ident))
+        if ident.startswith('mikan:'):ident=ident.split(':',1)[1]
+        if ident.isdigit():
+            known=self.mikan_work(self.seed_rows('WHERE mikan_id=?',(ident,)))
+            if known:return self.detail_artwork(self.enrich(self.decorate(known,lookup=False)))
+            work=self.mikan_detail(ident)
+            if self._references:work=self._references.enrich(work)
+            return self.detail_artwork(self.enrich(work))
         raise AppError('WORK_NOT_FOUND','作品不在当前目录中',404)
 
     def seasons(self):
@@ -180,7 +185,7 @@ class Catalog:
         if not 1990<=year<=current['year']+2 or season not in {'冬','春','夏','秋'}:raise AppError('INVALID_SEASON','季度参数不正确')
         key=f'schedule:v2:{year}:{season}'
         cached=self.store.cache_get(key)
-        if cached is not None:return {**cached,'refreshing':False}
+        if cached is not None:return {**self.schedule_titles(cached),'refreshing':False}
         stale=self.store.cache_get(key,stale=True)
         archived=self.seed_query('SELECT payload FROM catalog_seasons WHERE year=? AND season=?',(year,season))
         if not stale and archived:stale={**json.loads(archived[0]['payload']),'source':'snapshot_fallback'}
@@ -190,7 +195,7 @@ class Catalog:
             if not self._closed:self.store.cache_set(key,result,600 if {'year':year,'season':season}==current else 86400)
         if stale or items:
             self.background(key,refresh)
-            if stale:return {**stale,'refreshing':key in self._inflight}
+            if stale:return {**self.schedule_titles(stale),'refreshing':key in self._inflight}
             compact=[self.summary(self.decorate(x,lookup=False)) for x in items]
             return {'days':[{'day':i,'label':['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][i],
                     'items':[x for x in compact if x.get('air_weekday') is not None and str(x['air_weekday'])==str(i)]} for i in range(7)],
@@ -217,10 +222,11 @@ class Catalog:
             except AppError:continue
         if not any(g['items'] for g in days):raise ProviderError('MIKAN_EMPTY_SCHEDULE','加载失败，请重试')
         ids=list({str(w.get('bangumiId')) for g in days for w in g['items']})
-        known={}
+        by_source={}
         if ids:
             for row in self.seed_rows('WHERE mikan_id IN ('+','.join('?' for _ in ids)+')',ids,3000):
-                known.setdefault(str(row.get('mikan_id')),row)
+                by_source.setdefault(str(row.get('mikan_id')),[]).append(row)
+        known={bid:self.mikan_work(rows) for bid,rows in by_source.items()}
         full=[]
         for group in days:
             values=[self.decorate({**x,'air_weekday':group['day']},known=known.get(str(x.get('bangumiId')),{}),lookup=False) for x in group['items']]
@@ -229,17 +235,38 @@ class Catalog:
         return {'days':days,'bangumis':[x for g in days for x in g['items']], 'unknownItems':[],
                 'year':year,'season':season,'source':'live','source_notice':''}
 
-    @staticmethod
-    def summary(work):
+    def schedule_titles(self,data):
+        compact=[*data.get('bangumis',[]),*data.get('unknownItems',[])]
+        compact.extend(item for group in data.get('days',[]) for item in group['items'])
+        ids=list(dict.fromkeys(item['id'] for item in compact if item.get('id')))
+        works={}
+        for i in range(0,len(ids),500):
+            batch=ids[i:i+500]
+            rows=self.seed_rows('WHERE id IN ('+','.join('?' for _ in batch)+')',batch,len(batch))
+            works.update((row['id'],row) for row in rows)
+        titles={ident:self.tmdb_display(work) for ident,work in works.items()}
+        def overlay(item):
+            result={k:v for k,v in item.items() if k!='tmdbTitle'}
+            title=titles.get(item.get('id'))
+            if title:result['tmdbTitle']=title
+            return result
+        return {**data,'days':[{**group,'items':[overlay(item) for item in group['items']]} for group in data.get('days',[])],
+                'bangumis':[overlay(item) for item in data.get('bangumis',[])],
+                'unknownItems':[overlay(item) for item in data.get('unknownItems',[])]}
+
+    def summary(self,work):
         fields={'id','canonical_id','bangumiId','mikan_id','mikanBangumiId','title','year','image','poster_url','portrait_url',
                 'air_weekday','updateDate','ratings','defaultSeason','display_season','genres','media_type','mikan_poster_url'}
-        return {k:v for k,v in work.items() if k in fields}
+        out={k:v for k,v in work.items() if k in fields}
+        title=self.tmdb_display(work)
+        if title:out['tmdbTitle']=title
+        return out
 
     def decorate(self,item,*,known=None,lookup=True):
         bid=str(item.get('bangumiId') or item.get('mikan_id') or '')
         if known is None:
-            rows=self.seed_rows('WHERE mikan_id=?',(bid,),1) if lookup and bid.isdigit() else []
-            known=rows[0] if rows else {}
+            rows=self.seed_rows('WHERE mikan_id=?',(bid,)) if lookup and bid.isdigit() else []
+            known=self.mikan_work(rows)
         out={**known,**{k:v for k,v in item.items() if v is not None and v!='' and not (k in {'episodes','seasons'} and not v)}}
         if urllib.parse.urlsplit(str(known.get('poster_url') or '')).hostname=='image.tmdb.org':out['poster_url']=out['image']=known['poster_url']
         out.setdefault('image',out.get('poster_url',''));out.setdefault('poster_url',out.get('image',''))
@@ -262,22 +289,117 @@ class Catalog:
         out.setdefault('canonical_id',out.get('id',''));out['inLibrary']=False;out['playable']=False
         return out
 
-    def enrich(self,work):
-        ident=work.get('tmdb_id') or (work.get('provider_ids') or {}).get('tmdb')
-        if not str(ident or '').isdigit():return work
+    @staticmethod
+    def tmdb_scope(work):
+        provider_id=(work.get('provider_ids') or {}).get('tmdb')
+        ident=work.get('tmdb_id') or provider_id
         mapping=work.get('tmdb_mapping') or {}
-        if mapping.get('status') in {'season_ambiguous','work_only','multiple_works','episode_scope'}:return work
-        season=int(work.get('tmdb_season') if work.get('tmdb_season') is not None else work.get('display_season') or work.get('defaultSeason') or 1)
-        kind='movie' if work.get('media_type')=='movie' else 'tv'
-        key=f'tmdb:v2:{kind}:{ident}:{season}'
+        status=mapping.get('status')
+        if not str(ident or '').isdigit() or work.get('tmdb_link_conflict'):return None
+        if any(value is not None and str(value)!=str(ident) for value in (mapping.get('id'),provider_id)):return None
+        if status not in {None,'linked','episode_scope'}:return None
+        kind=mapping.get('type') or ('movie' if work.get('media_type')=='movie' else 'tv')
+        if kind=='movie' and status!='episode_scope':return kind,str(ident),None,None
+        if kind!='tv':return None
+        season=mapping.get('season',work.get('tmdb_season'))
+        if type(season) is not int or season<0:return None
+        episode=mapping.get('episode') if status=='episode_scope' else None
+        if status=='episode_scope' and (type(episode) is not int or episode<1):return None
+        return kind,str(ident),season,episode
+
+    def mikan_work(self,rows,bangumi_id=None):
+        if bangumi_id:
+            rows=[row for row in rows if str((row.get('provider_ids') or {}).get('bangumi'))==bangumi_id]
+        if len(rows)==1:return rows[0]
+        # A shared Mikan ID does not identify a season or a film.
+        scopes={(self.tmdb_scope(row),row.get('tmdb_id'),row.get('tmdb_season')) for row in rows}
+        subjects={str((row.get('provider_ids') or {}).get('bangumi') or '') for row in rows}
+        if len(scopes)==len(subjects)==1 and '' not in subjects:
+            return rows[0]
+        return {}
+
+    @staticmethod
+    def tmdb_cache_key(prefix,scope):
+        return prefix+':'+':'.join(str(part) for part in scope if part is not None)
+
+    def tmdb_work(self,kind,ident,season):
+        rows=self.seed_rows("WHERE CAST(json_extract(payload,'$.tmdb_id') AS TEXT)=?",(str(ident),))
+        works={}
+        for row in rows:
+            scope=self.tmdb_scope(row)
+            if scope and scope[:2]==(kind,str(ident)) and scope[3] is None and (season is None or scope[2]==season):
+                works.setdefault(scope,row)
+        return self.enrich(next(iter(works.values()))) if len(works)==1 else None
+
+    def tmdb_display(self,work):
+        scope=self.tmdb_scope(work)
+        if not scope:return ''
+        kind,ident,season,episode=scope
+        with self._lock:
+            if self._public_tmdb is None:
+                self._public_tmdb={}
+                original_titles=self.seed.with_name('tmdb-original-titles.json')
+                if original_titles.is_file():
+                    self._original_titles=json.loads(original_titles.read_text(encoding='utf-8'))
+                for row in self.seed_query("SELECT external_id,payload FROM provider_metadata WHERE provider IN ('TMDB','TMDB_DETAIL') ORDER BY provider"):
+                    data=json.loads(row['payload'])
+                    if str(data.get('tmdb_id') or data.get('id'))!=row['external_id']:continue
+                    media=data.get('media_type') or ('tv' if data.get('name') or data.get('first_air_date') else 'movie' if data.get('release_date') else '')
+                    if media=='series':media='tv'
+                    if media in {'tv','movie'}:
+                        self._public_tmdb.setdefault((media,row['external_id']),{}).update(data)
+            if self._live_titles is None:
+                rows=self.store.all("SELECT key,payload FROM catalog_cache WHERE key LIKE 'tmdb:display:v1:%'")
+                self._live_titles={row['key']:json.loads(row['payload']) for row in rows}
+            live=self._live_titles.get(self.tmdb_cache_key('tmdb:display:v1',scope))
+            data=self._public_tmdb.get((kind,ident),{})
+        if live:return live
+        series=(data.get('name') or data.get('title') or data.get('original_name') or data.get('original_title')
+                or self._original_titles.get(kind,{}).get(ident,''))
+        if not series:return ''
+        if episode is not None:
+            item=next((item for item in data.get('episodes') or [] if item.get('season_number')==season and
+                       item.get('episode_number')==episode),{})
+            return Metadata.episode_display_title(series,season,episode,item.get('name') or item.get('title'))
+        season_title=next((s.get('name') for s in data.get('seasons') or [] if s.get('season_number')==season),'')
+        return Metadata.display_title(series,season,season_title)
+
+    def enrich(self,work):
+        scope=self.tmdb_scope(work)
+        out={k:v for k,v in work.items() if k!='tmdbTitle'}
+        if not scope:return out
+        kind,ident,season,episode=scope
+        key=self.tmdb_cache_key('tmdb:v3',scope)
+        title=self.tmdb_display(work)
+        if title:out['tmdbTitle']=title
+        if season is not None:
+            out['defaultSeason']=season
+            out['tmdb_season']=season
+            out['seasons']=[item for item in work.get('seasons') or [] if item.get('season_number')==season and episode is None]
+            out['episodes']=[item for item in work.get('episodes') or [] if item.get('season_number')==season and
+                             (episode is None or item.get('episode_number')==episode)]
         cached=self.store.cache_get(key,stale=True)
+        if cached is None and episode is None:
+            old=self.store.cache_get(f'tmdb:v2:{kind}:{ident}:{season if season is not None else 1}',stale=True)
+            if old and str(old.get('tmdb_id'))==ident and (kind=='movie' or old.get('defaultSeason')==season):
+                name=next((s.get('name') for s in old.get('seasons') or [] if s.get('season_number')==season),'')
+                cached={**old,'tmdbTitle':Metadata.display_title(old.get('title'),season,name)}
+                if kind=='tv':cached.pop('ratings',None)
         if self.metadata.status()['tmdb_configured'] and self.store.cache_get(key) is None:
             def refresh():
-                result=self.metadata.title(kind,ident,season)
-                if not self._closed:self.store.cache_set(key,result,86400)
+                result=self.metadata.title(kind,ident,season,episode=episode) if episode is not None else self.metadata.title(kind,ident,season)
+                if self._closed:return
+                if result.get('tmdbTitle'):
+                    label_key=self.tmdb_cache_key('tmdb:display:v1',scope)
+                    self.store.cache_set(label_key,result['tmdbTitle'],86400)
+                    with self._lock:
+                        if self._live_titles.get(label_key)!=result['tmdbTitle']:
+                            self._live_titles[label_key]=result['tmdbTitle']
+                            self._search_index=None
+                self.store.cache_set(key,result,86400)
             self.background(key,refresh)
-        if not cached:return {**work,'metadata_pending':key in self._inflight}
-        out=dict(work)
+        if not cached:return {**out,'metadata_pending':key in self._inflight}
+        if cached.get('tmdbTitle'):out['tmdbTitle']=cached['tmdbTitle']
         for field in ['poster_url','backdrop_url','overview','genres','episodes','seasons','credits']:
             if field=='credits' and not any((cached.get('credits') or {}).values()):continue
             if cached.get(field):out[field]=cached[field]
@@ -337,7 +459,8 @@ class Catalog:
         term=str(term).strip()[:200]
         if not term:return {'query':'','results':[],'count':0}
         with self._lock:
-            if self._search_index is None:self._search_index=fuzzy.build_index(self.all_works())
+            if self._search_index is None:
+                self._search_index=fuzzy.build_index(({**row,'tmdbTitle':self.tmdb_display(row)} for row in self.all_works()))
             index=self._search_index
         items=fuzzy.search(index,term)
         def refresh():
@@ -353,7 +476,10 @@ class Catalog:
         if self.store.cache_get(key) is None:
             def update():refresh();self.store.cache_set(key,True,600)
             self.background(key,update)
-        unique={str(x.get('mikan_id') or x.get('bangumiId') or x.get('id')):self.summary(x) for x in items}
+        unique={}
+        for row in items:
+            ident=str(row.get('canonical_id') or row.get('id') or row.get('mikan_id'))
+            if ident not in unique:unique[ident]=self.summary(row)
         return {'query':term,'results':list(unique.values()),'count':len(unique),'refreshing':key in self._inflight}
 
     def mikan_detail(self,bid,subgroup_id=None,expanded=False):
@@ -398,11 +524,12 @@ class Catalog:
         provider_ids={}
         match=re.search(r'https?://(?:bgm\.tv|bangumi\.tv|chii\.in)/subject/(\d+)',page)
         if match:provider_ids['bangumi']=match[1]
+        known=self.mikan_work(self.seed_rows('WHERE mikan_id=?',(str(bid),)),provider_ids.get('bangumi'))
         result=self.decorate({'bangumiId':str(bid),'mikan_id':str(bid),'mikanBangumiId':str(bid),
                               'title':title,'image':poster,'poster_url':poster,'subgroups':groups,'subgroupsCount':len(groups),'episodes':[],
-                              'media_type':'series','source':'MIKAN'})
+                              'source':'MIKAN'},known=known)
         result['provider_ids']={**result.get('provider_ids',{}),**provider_ids}
-        result.setdefault('defaultSeason',parser.parse_season_and_clean_title(title)[1] or 1)
+        result.setdefault('media_type','series')
         return result
 
     def resources(self,ident,bid=None,subgroup=None):

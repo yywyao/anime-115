@@ -15,7 +15,7 @@ def strings(value):
 
 def names(work):
     values=[]
-    for field in ['title','title_zh','title_original','original_title','title_english','title_romaji','aliases','synonyms','titles']:
+    for field in ['title','tmdbTitle','title_zh','title_original','original_title','title_english','title_romaji','aliases','synonyms','titles']:
         values.extend(strings(work.get(field)))
     return tuple(dict.fromkeys(normalize(v) for v in values if v))[:80]
 

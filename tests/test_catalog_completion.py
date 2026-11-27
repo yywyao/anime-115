@@ -32,10 +32,18 @@ class IdentityRegression(unittest.TestCase):
         result=self.make([{'type':'tv','id':77,'season':2}]).enrich({'id':'other','title':'第二季'})
         self.assertNotIn('tmdb_id',result)
     def test_conflicting_tmdb_target_keeps_existing_link(self):
-        result=self.make([{'type':'tv','id':77,'season':2}]).enrich({'id':'original','tmdb_id':88,'provider_ids':{'bangumi':'200'}})
-        self.assertEqual(result['tmdb_id'],88);self.assertTrue(result['tmdb_link_conflict'])
+        result=self.make([{'type':'tv','id':77,'season':2}]).enrich({'id':'original','tmdb_id':88,'tmdb_season':2,'provider_ids':{'bangumi':'200'}})
+        self.assertEqual(result['tmdb_id'],88);self.assertTrue(result['tmdb_link_conflict']);self.assertNotIn('tmdb_season',result)
+
+    def test_conflicting_kind_with_same_tmdb_id_stays_unresolved(self):
+        result=self.make([{'type':'tv','id':77,'season':2}]).enrich({'id':'original','tmdb_id':77,'tmdb_season':2,'tmdb_mapping':{'type':'movie','id':77},'media_type':'movie','provider_ids':{'bangumi':'200'}})
+        self.assertTrue(result['tmdb_link_conflict']);self.assertNotIn('tmdb_season',result)
+
+    def test_missing_sources_preserve_existing_conflict(self):
+        result=CrossReferences({'items':[]},[],{'subjects':[]}).enrich({'id':'original','tmdb_id':77,'tmdb_link_conflict':True,'provider_ids':{'bangumi':'200'}})
+        self.assertTrue(result['tmdb_link_conflict']);self.assertEqual(result['tmdb_id'],77)
     def test_multiple_seasons_are_not_arbitrarily_selected(self):
-        result=self.make([{'type':'tv','id':77,'season':1},{'type':'tv','id':77,'season':2}]).enrich({'id':'original','provider_ids':{'bangumi':'200'}})
+        result=self.make([{'type':'tv','id':77,'season':1},{'type':'tv','id':77,'season':2}]).enrich({'id':'original','tmdb_season':2,'provider_ids':{'bangumi':'200'}})
         self.assertEqual(result['tmdb_mapping']['status'],'season_ambiguous');self.assertNotIn('tmdb_season',result)
     def test_multiple_subject_bridges_do_not_choose_first_bangumi_id(self):
         bg={'items':[{'title':'part','sites':[{'site':'aniList','id':'100'},{'site':'bangumi','id':str(b)}]} for b in [200,201]]}
@@ -45,15 +53,32 @@ class IdentityRegression(unittest.TestCase):
         bg={'items':[{'title':'special','sites':[{'site':'bangumi','id':'200'},{'site':'mal','id':'100'},{'site':'tmdb','id':'movie/335659'}]}]}
         fribb=[{'mal_id':100,'themoviedb_id':{'tv':61422},'season':{'tmdb':0}}]
         index=CrossReferences(bg,fribb,{'subjects':[{'bangumiId':200,'targets':[{'type':'movie','id':335659}]}]})
-        result=index.enrich({'id':'x','provider_ids':{'bangumi':'200'}})
+        result=index.enrich({'id':'x','media_type':'series','provider_ids':{'bangumi':'200'}})
         self.assertEqual(result['tmdb_id'],335659);self.assertEqual(result['media_type'],'movie')
     def test_multi_film_subject_is_not_replaced_by_first_movie(self):
         index=self.make([{'type':'movie','id':10},{'type':'movie','id':20}],sites=[{'site':'bangumi','id':'200'},{'site':'tmdb','id':'movie/10'}])
         result=index.enrich({'id':'x','provider_ids':{'bangumi':'200'}})
         self.assertNotIn('tmdb_id',result);self.assertEqual(len(result['tmdb_targets']),2)
+
+    def test_compound_subject_does_not_keep_parent_as_confirmed_work(self):
+        index=self.make([{'type':'tv','id':10,'season':1},{'type':'tv','id':20,'season':1}],sites=[{'site':'bangumi','id':'200'},{'site':'tmdb','id':'tv/10/season/1'}])
+        result=index.enrich({'id':'x','tmdb_id':10,'tmdb_season':1,'tmdb_mapping':{'type':'tv','id':10,'status':'linked'},'provider_ids':{'bangumi':'200'}})
+        self.assertEqual(result['tmdb_mapping']['status'],'multiple_works');self.assertTrue(result['tmdb_link_conflict']);self.assertNotIn('tmdb_season',result);self.assertEqual(len(result['tmdb_targets']),2)
     def test_episode_scoped_special_keeps_its_scope(self):
         result=self.make([{'type':'tv','id':77,'season':0,'episode':9}]).enrich({'id':'x','provider_ids':{'bangumi':'200'}})
-        self.assertEqual(result['tmdb_id'],77);self.assertEqual(result['tmdb_mapping']['status'],'episode_scope');self.assertEqual(result['tmdb_season'],0)
+        self.assertEqual(result['tmdb_id'],77);self.assertEqual(result['tmdb_mapping']['status'],'episode_scope');self.assertEqual(result['tmdb_mapping']['episode'],9);self.assertEqual(result['tmdb_season'],0)
+
+    def test_zero_episode_is_not_a_concrete_episode_scope(self):
+        result=self.make([{'type':'tv','id':77,'season':0,'episode':0}]).enrich({'id':'x','provider_ids':{'bangumi':'200'}})
+        self.assertNotIn('tmdb_id',result);self.assertNotIn('tmdb_mapping',result)
+
+    def test_multiple_episode_scopes_do_not_select_one_episode(self):
+        result=self.make([{'type':'tv','id':77,'season':0,'episode':9},{'type':'tv','id':77,'season':0,'episode':10}]).enrich({'id':'x','provider_ids':{'bangumi':'200'}})
+        self.assertEqual(result['tmdb_mapping']['status'],'episode_scope');self.assertNotIn('episode',result['tmdb_mapping']);self.assertEqual(result['tmdb_season'],0)
+
+    def test_episode_scope_with_conflicting_season_does_not_keep_episode(self):
+        result=self.make([{'type':'tv','id':77,'season':0,'episode':9},{'type':'tv','id':77,'season':1}]).enrich({'id':'x','provider_ids':{'bangumi':'200'}})
+        self.assertEqual(result['tmdb_mapping']['status'],'linked');self.assertNotIn('episode',result['tmdb_mapping']);self.assertEqual(result['tmdb_season'],1)
     def test_corrected_source_identity_drops_stale_original_title_and_score(self):
         index=self.make([{'type':'movie','id':77}]);result=index.enrich({'id':'catalog~999','title':'蜜柑标题','title_original':'错误的特典','ratings':{'mal':8},'provider_ids':{'anilist':'100'}})
         self.assertEqual(result['title_original'],'第二季');self.assertEqual(result['ratings'],{})

@@ -100,10 +100,28 @@ class Metadata:
         images=self.call('/'+kind+'/'+str(ident)+'/images',{'language':'ja','include_image_language':'ja,null'})
         return self.select_artwork(images)
 
-    def title(self,media_type,ident,season=None):
+    @staticmethod
+    def display_title(series_title,season=None,season_title='',episode_title=''):
+        series_title=(series_title or '').strip()
+        label=(episode_title or season_title or '').strip()
+        if not label and season==0:label='特别篇'
+        if not label and season not in (None,0,1):label=f'第 {season} 季'
+        if season==1 and re.fullmatch(r'(?:第\s*1\s*[季期]|Season\s*1)',label,re.I):label=''
+        if not series_title or not label or label in series_title:return series_title or label
+        if label.startswith(series_title):return label
+        return f'{series_title} · {label}'
+
+    @classmethod
+    def episode_display_title(cls,series_title,season,episode,name=None):
+        scope='特别篇' if season==0 else f'第 {season} 季'
+        return cls.display_title(series_title,season,episode_title=name or f'{scope}第 {episode} 集')
+
+    def title(self,media_type,ident,season=None,*,episode=None):
         kind='movie' if media_type=='movie' else 'tv'
         if not str(ident).isdigit():raise AppError('INVALID_PROVIDER_ID','作品不存在',404)
         data=self.call('/'+kind+'/'+str(ident),{'language':'zh-CN','append_to_response':'credits'})
+        if str(data.get('id'))!=str(ident):
+            raise ProviderError('TMDB_ID_MISMATCH','TMDB 作品不一致，请重试')
         result={'tmdb_id':int(ident),'media_type':'movie' if kind=='movie' else 'series',
                 'title':data.get('name') or data.get('title') or '',
                 'title_original':data.get('original_name') or data.get('original_title') or '',
@@ -119,24 +137,42 @@ class Metadata:
                     for p in (data.get('credits') or {}).get(group,[])[:40]] for group in ['cast','crew']},
                 'genres':[g['name'] for g in data.get('genres',[]) if g.get('name')],
                 'seasons':[],'episodes':[]}
-        if kind=='movie':return result
-        selected=int(1 if season is None else season)
+        series_title=result['title'] or result['title_original']
+        if season is None or kind=='movie':
+            result['tmdbTitle']=series_title
+            return result
+        selected=int(season)
+        result.update(poster_url='',backdrop_url='',overview='',year=None,ratings={},vote_count=0)
         known={int(s['season_number']):s for s in data.get('seasons',[]) if s.get('season_number') is not None}
         if selected not in known:
-            # A parent's first season must not replace a missing second season.
-            if selected>1:result.update(poster_url='',backdrop_url='',overview='',year=None)
             return result
-        details=self.call('/tv/'+str(ident)+'/season/'+str(selected),{'language':'zh-CN'})
+        path='/tv/'+str(ident)+'/season/'+str(selected)
+        if episode is not None:
+            details=self.call(path+'/episode/'+str(episode),{'language':'zh-CN'})
+            if details.get('season_number')!=selected or details.get('episode_number')!=episode:
+                raise ProviderError('TMDB_ID_MISMATCH','TMDB 集数不一致，请重试')
+            result['tmdbTitle']=self.episode_display_title(series_title,selected,episode,details.get('name'))
+            result['episodes']=[self.episode_details(details,selected)]
+            result['overview']=details.get('overview') or ''
+            result['year']=int((details.get('air_date') or '0')[:4] or 0) or None
+            return result
+        details=self.call(path,{'language':'zh-CN'})
+        if details.get('season_number',selected)!=selected:
+            raise ProviderError('TMDB_ID_MISMATCH','TMDB 季号不一致，请重试')
         result['seasons']=[{'season_number':selected,'name':details.get('name') or f'第 {selected} 季',
                             'air_date':details.get('air_date'),'episode_count':len(details.get('episodes') or []),
                             'poster_url':self.image(details.get('poster_path')),'provider':'TMDB'}]
         result['defaultSeason']=selected
-        if selected>1:
-            result['poster_url']=self.image(details.get('poster_path'))
-            result['overview']=details.get('overview') or ''
-            result['year']=int((details.get('air_date') or '0')[:4] or 0) or None
-        result['episodes']=[{'id':e.get('id'),'season_number':selected,'episode_number':e.get('episode_number'),
-            'title':e.get('name') or '', 'overview':e.get('overview') or '', 'air_date':e.get('air_date'),
-            'still_url':self.image(e.get('still_path'),'w780'),'runtime':e.get('runtime')}
-            for e in details.get('episodes',[]) if e.get('episode_number')]
+        result['tmdbTitle']=self.display_title(series_title,selected,details.get('name'))
+        result['poster_url']=self.image(details.get('poster_path'))
+        result['overview']=details.get('overview') or ''
+        result['year']=int((details.get('air_date') or '0')[:4] or 0) or None
+        result['episodes']=[self.episode_details(e,selected) for e in details.get('episodes',[])
+                            if e.get('episode_number') and e.get('season_number',selected)==selected]
         return result
+
+    def episode_details(self,episode,season):
+        return {'id':episode.get('id'),'season_number':season,'episode_number':episode.get('episode_number'),
+                'title':episode.get('name') or '', 'overview':episode.get('overview') or '',
+                'air_date':episode.get('air_date'),'still_url':self.image(episode.get('still_path'),'w780'),
+                'runtime':episode.get('runtime')}

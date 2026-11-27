@@ -51,17 +51,26 @@ def valid_date(value):
     try:return datetime.date.fromisoformat(str(value)[:10]).isoformat()
     except ValueError:return ''
 
-def target(kind,ident,season=None):
+def target(kind,ident,season=None,episode=None):
     ident=identifier(ident)
     if kind not in {'tv','movie'} or not ident:return None
     if season is not None:
         try:season=int(season)
         except (ValueError,TypeError):return None
         if season<0:return None
-    return {'type':kind,'id':int(ident),'season':season if kind=='tv' else None}
+    if episode is not None:
+        if kind!='tv':return None
+        try:episode=int(episode)
+        except (ValueError,TypeError):return None
+        # TMDB and TVDB episode numbers are positive.  Zero is reserved for
+        # specials represented by a season, not a concrete episode scope.
+        if episode<1 or season is None:return None
+    value={'type':kind,'id':int(ident),'season':season if kind=='tv' else None}
+    if episode is not None:value['episode']=episode
+    return value
 
 def unique_targets(values):
-    return list({(v['type'],v['id'],v['season']):v for v in values if v}.values())
+    return list({(v['type'],v['id'],v['season'],v.get('episode')):v for v in values if v}.values())
 
 class CrossReferences:
     def __init__(self,bg,fribb,subjects):
@@ -95,12 +104,16 @@ class CrossReferences:
             bid=identifier(row.get('bangumiId'));values=[];episode_only=[]
             for t in row.get('targets',[]):
                 # Episode-only specials cannot replace a subject's main season.
-                if t.get('episode') is None:values.append(target(t.get('type'),t.get('id'),t.get('season')))
-                else:episode_only.append(target(t.get('type'),t.get('id'),t.get('season')))
+                if t.get('episode') is None:
+                    value=target(t.get('type'),t.get('id'),t.get('season'))
+                    if value:values.append(value)
+                else:
+                    value=target(t.get('type'),t.get('id'),t.get('season'),t.get('episode'))
+                    if value:episode_only.append(value)
             record={'ids':{'bangumi':bid},'aliases':[],'targets':unique_targets(values or episode_only),'episode_scope':not values and bool(episode_only),'source':'open-ani/bangumi-tmdb'}
             if bid:register('bangumi',bid,record)
     def enrich(self,work):
-        out=dict(work);out.pop('tmdb_link_conflict',None);ids={str(k).lower():str(v) for k,v in (work.get('provider_ids') or {}).items() if v}
+        out=dict(work);ids={str(k).lower():str(v) for k,v in (work.get('provider_ids') or {}).items() if v}
         rows=[];visited=set()
         # Iterate links until no new explicit source id is discovered.
         for _ in range(3):
@@ -133,8 +146,12 @@ class CrossReferences:
             for t in row['targets']:candidates.append({**t,'source':row['source']})
         # A multi-film subject is not the first film in its collection.
         compound=[r for r in rows if r['source']=='open-ani/bangumi-tmdb' and len({(t['type'],t['id']) for t in r['targets']})>1]
-        if compound and not (work.get('tmdb_id') or ids.get('tmdb')):
-            out['tmdb_targets']=unique_targets(compound[0]['targets']);out['tmdb_mapping']={'status':'multiple_works','sources':['open-ani/bangumi-tmdb']};return out
+        if compound:
+            had_existing=bool(work.get('tmdb_id') or ids.get('tmdb'))
+            out['tmdb_targets']=unique_targets(compound[0]['targets']);out['tmdb_mapping']={'status':'multiple_works','sources':['open-ani/bangumi-tmdb']}
+            if had_existing:out['tmdb_link_conflict']=True
+            else:out.pop('tmdb_link_conflict',None)
+            out.pop('tmdb_season',None);return out
         types={(c['type'],c['id']) for c in candidates}
         if len(types)>1:
             votes={pair:{c['source'] for c in candidates if (c['type'],c['id'])==pair} for pair in types}
@@ -144,15 +161,29 @@ class CrossReferences:
                 out['tmdb_link_resolution']='cross_source_agreement'
         if len(types)==1:
             kind,ident=next(iter(types));existing=work.get('tmdb_id') or ids.get('tmdb')
+            prior_mapping=work.get('tmdb_mapping') or {}
+            prior_kind=prior_mapping.get('type') or ('movie' if work.get('media_type')=='movie' else 'tv' if work.get('media_type') in {'tv','series'} else None)
+            if prior_kind=='series':prior_kind='tv'
             if existing and str(existing)!=str(ident):
-                out['tmdb_link_conflict']=True;return out
+                out['tmdb_link_conflict']=True;out.pop('tmdb_season',None);return out
+            if existing and prior_kind and prior_kind!=kind:
+                out['tmdb_link_conflict']=True;out.pop('tmdb_season',None);return out
             seasons={c['season'] for c in candidates if c['season'] is not None}
+            episode_values={(c['type'],c['id'],c.get('season'),c.get('episode')) for c in candidates if c.get('episode') is not None}
+            out.pop('tmdb_link_conflict',None)
             out['tmdb_id']=ident;out['provider_ids']={**ids,'tmdb':str(ident)}
             out['media_type']='movie' if kind=='movie' else 'series'
             out['tmdb_mapping']={'type':kind,'id':ident,'season':next(iter(seasons)) if len(seasons)==1 else None,'sources':sorted({c['source'] for c in candidates}),'status':'season_ambiguous' if len(seasons)>1 else 'work_only' if not seasons and kind=='tv' else 'linked'}
-            if any(r.get('episode_scope') for r in rows):out['tmdb_mapping']['status']='episode_scope'
-            if len(seasons)==1:out['tmdb_season']=next(iter(seasons))
-        elif len(types)>1:out['tmdb_link_conflict']=True
+            if episode_values:
+                out['tmdb_mapping']['status']='episode_scope'
+                if kind=='tv' and len(seasons)==1 and len(episode_values)==1:
+                    episode_kind,episode_id,episode_season,episode=next(iter(episode_values))
+                    if episode_kind==kind and episode_id==ident and episode_season==next(iter(seasons)):
+                        out['tmdb_mapping']['episode']=episode
+            if len(seasons)==1 and out['tmdb_mapping']['status'] in {'linked','episode_scope'}:out['tmdb_season']=next(iter(seasons))
+            else:out.pop('tmdb_season',None)
+        elif len(types)>1:
+            out['tmdb_link_conflict']=True;out.pop('tmdb_season',None)
         return out
 
     def missing_works(self,works,first=2012,last=None):
