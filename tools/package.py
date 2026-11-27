@@ -13,6 +13,7 @@ for f in sorted(root.rglob('*')):
     rel=f.relative_to(root)
     if not f.is_file() or f.is_symlink() or any(x in skip for x in rel.parts):continue
     if f.name!='.env.example' and (f.name=='.env' or f.name.startswith('.env.')):continue
+    if f.name.startswith('work-run-') and f.suffix=='.json':continue
     if rel.as_posix()!='seed/catalog.sqlite' and (f.suffix.lower() in private_suffixes
            or any(marker in f.name.lower() for marker in ('.sqlite-','.sqlite3-','.db-'))):continue
     files.append(f)

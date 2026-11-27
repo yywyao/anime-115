@@ -24,5 +24,6 @@ cache
 frontend/node_modules
 release
 test-results
+work-run-*.json
 .venv
 .git
