@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "scope": "Local reference work and public catalog, mocked artwork bytes and authenticated modal reads.",
+  "results": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "chinese_home_title": true,
+      "japanese_portrait": true,
+      "neutral_backdrop": true,
+      "japanese_logo": true,
+      "chinese_overview": true,
+      "translucent_button": true,
+      "no_favorite_or_standalone_follow": true,
+      "follow_inside_transfer": true,
+      "escape_and_focus_restored": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "chinese_home_title": true,
+      "japanese_portrait": true,
+      "neutral_backdrop": true,
+      "japanese_logo": true,
+      "chinese_overview": true,
+      "translucent_button": true,
+      "no_favorite_or_standalone_follow": true,
+      "follow_inside_transfer": true,
+      "escape_and_focus_restored": true
+    }
+  ]
+}

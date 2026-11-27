@@ -8,5 +8,6 @@
 - [蜜柑计划](https://mikanani.me/)：公开季度、作品 ID、字幕组信息、Bangumi 链接及原始封面。
 - [TMDB](https://www.themoviedb.org/)：已有资料和用户配置 API 后取得的元数据与图片。本产品使用 TMDB 数据，但未经 TMDB 认可或认证。
 - [TMDB 每日 ID 导出](https://developer.themoviedb.org/docs/daily-id-exports)：`seed/tmdb-original-titles.json` 来自 2026-11-27 的官方电影和电视剧导出，仅保留本目录已有的、媒体类型和 TMDB ID 一致的原名。没有译名时可离线使用原名。
+- `seed/bangumi-zh-hans.json` 仅包含 bangumi-data 中与现有 Bangumi ID 明确对应的唯一简中名称。`seed/tmdb-japanese-posters.json` 记录经人工确认的 [《名侦探光之美少女！》TMDB 日文竖版海报](https://image.tmdb.org/t/p/original/zuPQ9R5x17EM6xEA37TLRkL2BGD.jpg)。
 
 来源一致不等于实时 TMDB 认证。未配置用户 TMDB API 时不会借用其他人的密钥。当前助手对可用来源、冲突类型及代表性 TMDB 页面作了核对；未确认的条目保留蜜柑资料，不伪造缺失评分或图片。

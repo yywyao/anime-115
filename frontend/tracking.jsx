@@ -5,13 +5,8 @@ const versions={chs:'简中',cht:'繁中','chs-ja':'简日','cht-ja':'繁日','c
 const initialRules={group_ids:[],versions:[],resolutions:[],include:[],exclude:[],dedupe:'episode',wait_minutes:5,allow_batches:false,min_episode:null,max_episode:null,rename:false,season:null,episode_offset:0,episode_title:false};
 const follows={list:null,promise:null,listeners:new Set()};
 function refreshFollows(list){follows.list=list;for(const notify of follows.listeners)notify(list);}
-function useFollowing(){const {useState,useEffect}=R(),[list,setList]=useState(follows.list||[]);useEffect(()=>{follows.listeners.add(setList);if(!follows.promise)follows.promise=api('/subscriptions').then(x=>refreshFollows(x.subscriptions)).catch(()=>refreshFollows([]));return()=>follows.listeners.delete(setList);},[]);return list;}
+export function useFollowing(){const {useState,useEffect}=R(),[list,setList]=useState(follows.list||[]);useEffect(()=>{follows.listeners.add(setList);if(!follows.promise)follows.promise=api('/subscriptions').then(x=>refreshFollows(x.subscriptions)).catch(()=>refreshFollows([]));return()=>follows.listeners.delete(setList);},[]);return list;}
 export function ReleaseInfo({release}){if(!release)return null;return <span className="m115-release-tags">{release.group&&<span>{release.group}</span>}<span>{release.version_label||versions[release.version]||'未标注'}</span>{release.resolution&&release.resolution!=='unknown'&&<span>{release.resolution}</span>}{release.batch&&<span>合集</span>}</span>;}
-export function FollowButton({work,compact=false}){
- const {useState}=R(),[open,setOpen]=useState(false),list=useFollowing(),bid=String(work.mikan_id||work.bangumiId||''),id=String(work.canonical_id||work.id||bid);
- const existing=list.find(s=>(bid&&s.bangumi_id===bid)||s.work_id===id);
- return <><button className={'secondary-button m115-follow-button '+(compact?'compact':'')} aria-label={(existing?'管理追新：':'追新：')+displayTitle(work)} onClick={()=>setOpen(true)}>{existing?'已追新':'追新'}</button>{open&&<FollowModal work={work} subscription={existing} close={()=>setOpen(false)}/>}</>;
-}
 function Choices({label,values,options,onChange}){return <fieldset className="m115-choices"><legend>{label}</legend><button type="button" className={!values.length?'selected':''} onClick={()=>onChange([])}>不限</button>{Object.entries(options).map(([key,name])=><label key={key}><input type="checkbox" checked={values.includes(key)} onChange={e=>onChange(e.target.checked?[...values,key]:values.filter(v=>v!==key))}/>{name}</label>)}</fieldset>;}
 function RulesEditor({value,onChange,groups,allGroups}){
  const {useState}=R(),[query,setQuery]=useState(''),[other,setOther]=useState(false),set=(key,v)=>onChange({...value,[key]:v});

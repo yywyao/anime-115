@@ -1,7 +1,7 @@
 {
-  "verified_utc": "2026-11-27T09:43:40.336207+00:00",
+  "verified_utc": "2026-11-27T10:12:16.515965+00:00",
   "python": "3.12.14",
-  "tests_run": 119,
+  "tests_run": 125,
   "success": true,
   "cases": [
     {
@@ -337,6 +337,30 @@
       "result": "passed"
     },
     {
+      "name": "tests.test_presentation.ArtworkLanguage.test_only_japanese_portrait_poster_is_selected_for_the_exact_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.ArtworkLanguage.test_single_season_episode_label_omits_first_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.LocalizedCatalog.test_chinese_alias_of_same_subject_is_a_fallback_for_a_japanese_title",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.LocalizedCatalog.test_detail_accepts_chinese_synopsis_and_suppresses_foreign_one",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.LocalizedCatalog.test_home_uses_chinese_title_and_season_poster_even_for_old_schedule_cache",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.LocalizedCatalog.test_sequel_does_not_borrow_first_season_poster_or_lose_its_number",
+      "result": "passed"
+    },
+    {
       "name": "tests.test_public_restore.PublicRestore.test_restoration_keeps_seasons_scores_and_private_data_separate",
       "result": "passed"
     },
@@ -489,16 +513,17 @@
   "file_hashes": {
     "mikan115/alist.py": "03baabb2611c5c45f262c7b6f40bc355f99f9a5f6e23e49841e14d8c9e25667e",
     "mikan115/auth.py": "0476fde889d03bf7aad2b65184f99c44e9812bafe9e482ee983712096aa0ec31",
-    "mikan115/catalog.py": "de24c12543f3711a75cc8cc16ed258cdcbec1b48fb3aef39cbda5b850bf8f501",
-    "mikan115/catalog_sync.py": "3a203ee1368b1a29520878c37b2b5a123a0c034f0abe893799a5f3ac9108cf0b",
+    "mikan115/catalog.py": "43691029c95e8adfa1237fc0848ef6990e37c685b5c173ae069d595b21c21779",
+    "mikan115/catalog_sync.py": "e2ab2e5a75e80ad99d7e8bf2dbb6572eb5600cdcfbffd63d2036df61ce2cea55",
     "mikan115/config.py": "e8fae9a9168f96b9176fba90c35876aab454f2603790737b87ff0a95fc25e773",
     "mikan115/errors.py": "0d16ff3d29664623429e5e4ea2f66962765e6a6410afe38879a8f7d530d025a6",
     "mikan115/following.py": "9c61414e898f1aa6aea08f69be1a317bebeb3dd174cb84e76772dbe613305af3",
     "mikan115/http_client.py": "b80065ac72d9b37920ea78cabfc09048657db2cba4e871e8518f62dcc1cae048",
-    "mikan115/metadata.py": "e11df0755dd94e9e8cc3dcc3038d82b9ba0f091102380476c7f5b7beca00a7a4",
+    "mikan115/metadata.py": "6961810cd69acd36202395226d44b68c6ac8573aa66dcfa72e6917515f71329f",
     "mikan115/mikan_parser.py": "f65d3c9e95b8e63ec2befee55b7b68be212f4ee52d7dcc476f12b597cb985456",
     "mikan115/organizer.py": "087a568274ddecd2f8423ee42f58749a8eeb69b41d37eb33bc86efed9795c4ed",
     "mikan115/pan115.py": "1f77663351661f0517770308adafea813e4461d6ac716d8d79bde2cda2f2b0d3",
+    "mikan115/presentation.py": "c87f742448f7ad66221971ba6b1201d7d3fe10362594b40e463a2f9f2fa51242",
     "mikan115/releases.py": "aeb70dba9a33f7a76f6aefa6eae147d902097fbb30ed1ac0985d31f795f41edf",
     "mikan115/rss.py": "11cbcb3dc0bdc2f35e38205f386d6c0a97908d7f2e5c61a2ecb9efdb99eda749",
     "mikan115/search.py": "8f017a8e5669a43bedad32dd6b3d99a0fcb5ce31d803db892044c2fb2868fc56",
@@ -509,6 +534,6 @@
     "mikan115/workflow.py": "ff013af67e6cde1320f33869ff1f0344abf7738e5f9164774610eb2e5212f54c",
     "mikan115/__init__.py": "76cc8c988f15dfe1edb00c35815cba83409b22cb00ba60e592a90e16b11ad8b4",
     "static/assets/mikan115-app.js": "914ae28a12936f2489e53c4ffc0dc4b154fae793999afe408e4f9767987913af",
-    "static/mikan115-ui.js": "1bdd4f69049c8a9afeed0466d1d0d1a74046bf9bd44365cd797e93c8a456630b"
+    "static/mikan115-ui.js": "3ead72d6dcdb2eb49d7d2d267c647487865c59d36dcf53ecd89024b0ee4dc2c4"
   }
 }

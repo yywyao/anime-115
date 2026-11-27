@@ -88,7 +88,10 @@ class CrossReferences:
             aliases=[item.get('title','')]
             for v in (item.get('titleTranslate') or {}).values():aliases.extend(v if isinstance(v,list) else [v])
             record={'ids':ids,'aliases':aliases,'targets':unique_targets(targets),'date':item.get('begin') or '', 'source':'bangumi-data'}
-            record['title']=next(iter((item.get('titleTranslate') or {}).get('zh-Hans') or []),item.get('title',''))
+            hans=(item.get('titleTranslate') or {}).get('zh-Hans') or []
+            hans=hans if isinstance(hans,list) else [hans]
+            record['title']=next(iter(hans),item.get('title',''))
+            record['title_zh_cn']=next(iter(hans)) if len(set(hans))==1 else ''
             self.bg_records.append(record)
             for p,ident in ids.items():register(p,ident,record)
         for row in fribb:
@@ -133,6 +136,8 @@ class CrossReferences:
         aliases=list(work.get('aliases') or []) if isinstance(work.get('aliases'),list) and not corrected else []
         for row in rows:aliases.extend(a for a in row['aliases'] if a)
         out['aliases']=list(dict.fromkeys(aliases))[:80];out['provider_ids']=ids
+        hans={row.get('title_zh_cn') for row in rows if row.get('title_zh_cn')}
+        if len(hans)==1:out['title_zh_cn']=next(iter(hans))
         if corrected:
             originals={r['aliases'][0] for r in rows if r['source']=='bangumi-data' and r['aliases']}
             if len(originals)==1:out['title_original']=next(iter(originals))

@@ -6,6 +6,7 @@ import urllib.parse
 
 from .errors import AppError,ProviderError
 from .http_client import HTTP
+from .presentation import without_first_season
 
 class Metadata:
     def __init__(self,store,http=None,base='https://api.themoviedb.org/3'):
@@ -100,20 +101,39 @@ class Metadata:
         images=self.call('/'+kind+'/'+str(ident)+'/images',{'language':'ja','include_image_language':'ja,null'})
         return self.select_artwork(images)
 
+    @classmethod
+    def japanese_posters(cls,data):
+        ranked=[]
+        for image in (data.get('images') or data).get('posters',[]):
+            if not isinstance(image,dict):continue
+            if image.get('iso_639_1',image.get('language'))!='ja':continue
+            width,height=image.get('width'),image.get('height')
+            if not isinstance(width,int) or not isinstance(height,int) or not 0<width<height:continue
+            url=cls.artwork_url(image.get('file_path') or image.get('url'),'w500')
+            if url:ranked.append((float(image.get('vote_average') or 0),int(image.get('vote_count') or 0),width,url))
+        return list(dict.fromkeys(row[-1] for row in sorted(ranked,reverse=True)))
+
+    def poster(self,kind,ident,season=None):
+        path=f'/{kind}/{ident}'
+        if kind=='tv':path+=f'/season/{season}'
+        images=self.call(path+'/images',{'language':'ja'})
+        return next(iter(self.japanese_posters(images)),'')
+
     @staticmethod
     def display_title(series_title,season=None,season_title='',episode_title=''):
         series_title=(series_title or '').strip()
+        if season==1:series_title=without_first_season(series_title)
         label=(episode_title or season_title or '').strip()
         if not label and season==0:label='特别篇'
         if not label and season not in (None,0,1):label=f'第 {season} 季'
-        if season==1 and re.fullmatch(r'(?:第\s*1\s*[季期]|Season\s*1)',label,re.I):label=''
+        if season==1 and re.fullmatch(r'(?:第\s*[一1１]\s*[季期]|Season\s*1|1st\s+Season)',label,re.I):label=''
         if not series_title or not label or label in series_title:return series_title or label
         if label.startswith(series_title):return label
         return f'{series_title} · {label}'
 
     @classmethod
     def episode_display_title(cls,series_title,season,episode,name=None):
-        scope='特别篇' if season==0 else f'第 {season} 季'
+        scope='特别篇' if season==0 else '' if season==1 else f'第 {season} 季'
         return cls.display_title(series_title,season,episode_title=name or f'{scope}第 {episode} 集')
 
     def title(self,media_type,ident,season=None,*,episode=None):

@@ -16,6 +16,7 @@ from .http_client import HTTP
 from . import mikan_parser as parser
 from .torrent import torrent_magnet
 from .metadata import Metadata
+from .presentation import chinese, without_first_season
 from . import search as fuzzy
 from .releases import parse as parse_release
 
@@ -28,6 +29,7 @@ class Catalog:
         self._lock=threading.RLock();self._inflight={};self._fail_until={};self._closed=False
         self._search_index=None;self._updater=None;self._update_stop=threading.Event();self._references=None
         self._public_tmdb=None;self._original_titles={};self._live_titles=None
+        self._home_names=None;self._home_posters=None
         self.reconcile_public_seed()
 
     def reconcile_public_seed(self):
@@ -164,14 +166,14 @@ class Catalog:
     def work(self,ident):
         ident=str(ident)
         rows=self.seed_rows('WHERE id=?',(ident,),1)
-        if rows:return self.detail_artwork(self.enrich(self.decorate(rows[0],lookup=False)))
+        if rows:return self.present_detail(self.decorate(rows[0],lookup=False))
         if ident.startswith('mikan:'):ident=ident.split(':',1)[1]
         if ident.isdigit():
             known=self.mikan_work(self.seed_rows('WHERE mikan_id=?',(ident,)))
-            if known:return self.detail_artwork(self.enrich(self.decorate(known,lookup=False)))
+            if known:return self.present_detail(self.decorate(known,lookup=False))
             work=self.mikan_detail(ident)
             if self._references:work=self._references.enrich(work)
-            return self.detail_artwork(self.enrich(work))
+            return self.present_detail(work)
         raise AppError('WORK_NOT_FOUND','作品不在当前目录中',404)
 
     def seasons(self):
@@ -185,7 +187,7 @@ class Catalog:
         if not 1990<=year<=current['year']+2 or season not in {'冬','春','夏','秋'}:raise AppError('INVALID_SEASON','季度参数不正确')
         key=f'schedule:v2:{year}:{season}'
         cached=self.store.cache_get(key)
-        if cached is not None:return {**self.schedule_titles(cached),'refreshing':False}
+        if cached is not None:return self.schedule_titles({**cached,'refreshing':False})
         stale=self.store.cache_get(key,stale=True)
         archived=self.seed_query('SELECT payload FROM catalog_seasons WHERE year=? AND season=?',(year,season))
         if not stale and archived:stale={**json.loads(archived[0]['payload']),'source':'snapshot_fallback'}
@@ -195,17 +197,18 @@ class Catalog:
             if not self._closed:self.store.cache_set(key,result,600 if {'year':year,'season':season}==current else 86400)
         if stale or items:
             self.background(key,refresh)
-            if stale:return {**self.schedule_titles(stale),'refreshing':key in self._inflight}
+            if stale:return self.schedule_titles({**stale,'refreshing':key in self._inflight})
             compact=[self.summary(self.decorate(x,lookup=False)) for x in items]
-            return {'days':[{'day':i,'label':['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][i],
+            result={'days':[{'day':i,'label':['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][i],
                     'items':[x for x in compact if x.get('air_weekday') is not None and str(x['air_weekday'])==str(i)]} for i in range(7)],
                     'bangumis':compact,'unknownItems':[x for x in compact if x.get('air_weekday') is None],
                     'year':year,'season':season,'source':'snapshot_fallback','source_notice':'缓存',
                     'refreshing':key in self._inflight}
+            return self.schedule_titles(result,items)
         try:
             result=self.load_schedule(year,season)
             self.store.cache_set(key,result,600 if {'year':year,'season':season}==current else 86400)
-            return {**result,'refreshing':False}
+            return self.schedule_titles({**result,'refreshing':False})
         except AppError:
             raise ProviderError('SCHEDULE_UNAVAILABLE','加载失败，请重试')
 
@@ -235,24 +238,93 @@ class Catalog:
         return {'days':days,'bangumis':[x for g in days for x in g['items']], 'unknownItems':[],
                 'year':year,'season':season,'source':'live','source_notice':''}
 
-    def schedule_titles(self,data):
+    def schedule_titles(self,data,works=None):
         compact=[*data.get('bangumis',[]),*data.get('unknownItems',[])]
         compact.extend(item for group in data.get('days',[]) for item in group['items'])
         ids=list(dict.fromkeys(item['id'] for item in compact if item.get('id')))
-        works={}
-        for i in range(0,len(ids),500):
-            batch=ids[i:i+500]
-            rows=self.seed_rows('WHERE id IN ('+','.join('?' for _ in batch)+')',batch,len(batch))
-            works.update((row['id'],row) for row in rows)
-        titles={ident:self.tmdb_display(work) for ident,work in works.items()}
+        if works is None:
+            works=[]
+            for i in range(0,len(ids),500):
+                batch=ids[i:i+500]
+                works.extend(self.seed_rows('WHERE id IN ('+','.join('?' for _ in batch)+')',batch,len(batch)))
+        titles={work['id']:{**self.home_presentation(work),'tmdbTitle':self.tmdb_display(work)} for work in works}
+        pending=self.refresh_home_posters(works,data.get('year'),data.get('season'))
         def overlay(item):
-            result={k:v for k,v in item.items() if k!='tmdbTitle'}
-            title=titles.get(item.get('id'))
-            if title:result['tmdbTitle']=title
-            return result
-        return {**data,'days':[{**group,'items':[overlay(item) for item in group['items']]} for group in data.get('days',[])],
+            fields=titles.get(item.get('id'))
+            return {**item,**(fields if fields is not None else self.home_presentation(item))}
+        return {**data,'refreshing':bool(data.get('refreshing') or pending),
+                'days':[{**group,'items':[overlay(item) for item in group['items']]} for group in data.get('days',[])],
                 'bangumis':[overlay(item) for item in data.get('bangumis',[])],
                 'unknownItems':[overlay(item) for item in data.get('unknownItems',[])]}
+
+    def presentation_data(self):
+        with self._lock:
+            if self._home_names is None:
+                names=self.seed.with_name('bangumi-zh-hans.json')
+                self._home_names=json.loads(names.read_text(encoding='utf-8')) if names.is_file() else {}
+                for row in self.seed_query("SELECT external_id,payload FROM provider_metadata WHERE provider='BANGUMI'"):
+                    text=json.loads(row['payload']).get('name_cn')
+                    if text:self._home_names.setdefault(row['external_id'],text)
+            if self._home_posters is None:
+                rows=self.store.all("SELECT key,payload,expires_at FROM catalog_cache WHERE key LIKE 'tmdb:poster-ja:v1:%'")
+                self._home_posters={row['key']:(json.loads(row['payload']),row['expires_at']) for row in rows}
+                seed_posters=self.seed.with_name('tmdb-japanese-posters.json')
+                self._public_posters=json.loads(seed_posters.read_text(encoding='utf-8')) if seed_posters.is_file() else {}
+
+    def home_title(self,work):
+        self.presentation_data()
+        bangumi=str((work.get('provider_ids') or {}).get('bangumi') or '')
+        raw=work.get('title') or ''
+        aliases=work.get('aliases') or []
+        names=(work.get('title_zh_cn'),self._home_names.get(bangumi),work.get('title_zh'),raw,
+               *(aliases if isinstance(aliases,list) else []))
+        title=next((value for name in names if (value:=chinese(name))),raw)
+        scope=self.tmdb_scope(work)
+        season=scope[2] if scope else None
+        if work.get('media_type')!='movie' and season in (None,1):
+            title=without_first_season(title)
+        elif type(season) is int and season>1 and title and not re.search(
+                r'第\s*[一二三四五六七八九十\d]+\s*[季期]|\b(?:season|s)\s*\d+|\b\d+(?:st|nd|rd|th)\s+season',title,re.I):
+            title=self.metadata.display_title(title,season)
+        return title
+
+    def home_presentation(self,work):
+        title=self.home_title(work)
+        scope=self.tmdb_scope(work)
+        poster=''
+        if scope:
+            key=self.tmdb_cache_key('tmdb:poster-ja:v1',scope[:3])
+            with self._lock:
+                cached=self._home_posters.get(key,('',0))[0]
+            url=cached or self._public_posters.get(self.tmdb_cache_key('',scope[:3]).lstrip(':'),'')
+            poster=self.metadata.artwork_url(url,'w500')
+        return {'homeTitle':title,'homePoster':poster or work.get('mikan_poster_url') or ''}
+
+    def refresh_home_posters(self,works,year,season):
+        if not works or not self.metadata.status()['tmdb_configured']:return False
+        self.presentation_data()
+        scopes={}
+        for work in works:
+            scope=self.tmdb_scope(work)
+            if not scope:continue
+            key=self.tmdb_cache_key('tmdb:poster-ja:v1',scope[:3])
+            if self._home_posters.get(key,('',0))[1]<=time.time():scopes.setdefault(key,scope[:3])
+            if len(scopes)>=6:break
+        if not scopes:return False
+        refresh_key=f'home-posters:{year}:{season}'
+        def refresh():
+            for key,scope in scopes.items():
+                if self._closed:return
+                try:url=self.metadata.poster(*scope)
+                except AppError:
+                    # Keep a previously verified image when TMDB is unavailable.
+                    url=self._home_posters.get(key,('',0))[0]
+                    ttl=120
+                else:ttl=86400
+                self.store.cache_set(key,url,ttl)
+                with self._lock:self._home_posters[key]=(url,time.time()+ttl)
+        self.background(refresh_key,refresh)
+        return refresh_key in self._inflight
 
     def summary(self,work):
         fields={'id','canonical_id','bangumiId','mikan_id','mikanBangumiId','title','year','image','poster_url','portrait_url',
@@ -260,6 +332,27 @@ class Catalog:
         out={k:v for k,v in work.items() if k in fields}
         title=self.tmdb_display(work)
         if title:out['tmdbTitle']=title
+        return out
+
+    def present_detail(self,work):
+        out=self.detail_artwork(self.enrich(work))
+        out['homeTitle']=self.home_title(out)
+        overview=next((value for text in (work.get('overview_zh'),work.get('overview'),out.get('overview'))
+                       if (value:=chinese(text,overview=True))),'')
+        bid=str((work.get('provider_ids') or {}).get('bangumi') or '')
+        if not overview and bid.isdigit():
+            key='bangumi:overview-zh:'+bid
+            cached=self.store.cache_get(key,stale=True)
+            if self.store.cache_get(key) is None:
+                def refresh():
+                    data=self.http.json('GET','https://api.bgm.tv/v0/subjects/'+bid,
+                                        headers={'User-Agent':'Mikan115/1.0 (public catalog)'})
+                    if str(data.get('id'))==bid and not self._closed:
+                        self.store.cache_set(key,chinese(data.get('summary'),overview=True),86400)
+                self.background(key,refresh)
+            overview=chinese(cached,overview=True)
+            out['metadata_pending']=bool(out.get('metadata_pending') or key in self._inflight)
+        out['overviewZh']=overview
         return out
 
     def decorate(self,item,*,known=None,lookup=True):
@@ -353,7 +446,7 @@ class Catalog:
                 self._live_titles={row['key']:json.loads(row['payload']) for row in rows}
             live=self._live_titles.get(self.tmdb_cache_key('tmdb:display:v1',scope))
             data=self._public_tmdb.get((kind,ident),{})
-        if live:return live
+        if live:return without_first_season(live) if season==1 else live
         series=(data.get('name') or data.get('title') or data.get('original_name') or data.get('original_title')
                 or self._original_titles.get(kind,{}).get(ident,''))
         if not series:return ''
