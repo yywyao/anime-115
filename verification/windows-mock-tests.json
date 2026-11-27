@@ -1,9 +1,29 @@
 {
-  "verified_utc": "2026-11-27T10:12:16.515965+00:00",
+  "verified_utc": "2026-11-27T10:38:11.229377+00:00",
   "python": "3.12.14",
-  "tests_run": 125,
+  "tests_run": 139,
   "success": true,
   "cases": [
+    {
+      "name": "tests.test_automatic_presentation.AutomaticPresentation.test_backdrop_known_to_contain_text_is_not_restored",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.AutomaticPresentation.test_configured_tmdb_warms_all_exact_assets_without_opening_a_page",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.AutomaticPresentation.test_legacy_empty_synopsis_and_empty_gallery_do_not_mask_verified_sources",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.AutomaticPresentation.test_next_quarter_warms_public_assets_before_the_first_detail_visit",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.ChineseTranslations.test_traditional_chinese_is_used_when_simplified_chinese_is_missing",
+      "result": "passed"
+    },
     {
       "name": "tests.test_catalog_completion.IdentityRegression.test_compound_subject_does_not_keep_parent_as_confirmed_work",
       "result": "passed"
@@ -361,6 +381,42 @@
       "result": "passed"
     },
     {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_blank_legacy_cache_is_refreshed_and_invalid_cover_is_rejected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_cover_allowlist_rejects_credentials_queries_fragments_and_zero",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_exact_bangumi_id_fetches_and_caches_chinese_summary",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_foreign_summary_does_not_replace_stale_chinese_text",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_invalid_ids_never_call_public_source",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_keeps_chinese_when_bangumi_includes_the_japanese_original",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_same_response_caches_exact_cover_without_duplicate_fetch",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_upstream_failure_keeps_stale_text_and_uses_retry_window",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_wrong_id_response_is_not_cached",
+      "result": "passed"
+    },
+    {
       "name": "tests.test_public_restore.PublicRestore.test_restoration_keeps_seasons_scores_and_private_data_separate",
       "result": "passed"
     },
@@ -513,17 +569,18 @@
   "file_hashes": {
     "mikan115/alist.py": "03baabb2611c5c45f262c7b6f40bc355f99f9a5f6e23e49841e14d8c9e25667e",
     "mikan115/auth.py": "0476fde889d03bf7aad2b65184f99c44e9812bafe9e482ee983712096aa0ec31",
-    "mikan115/catalog.py": "43691029c95e8adfa1237fc0848ef6990e37c685b5c173ae069d595b21c21779",
+    "mikan115/catalog.py": "0a8df0630a50ffd08d41d8a205694cbe78a85477d2bb369e83849d12e57d2cfd",
     "mikan115/catalog_sync.py": "e2ab2e5a75e80ad99d7e8bf2dbb6572eb5600cdcfbffd63d2036df61ce2cea55",
     "mikan115/config.py": "e8fae9a9168f96b9176fba90c35876aab454f2603790737b87ff0a95fc25e773",
     "mikan115/errors.py": "0d16ff3d29664623429e5e4ea2f66962765e6a6410afe38879a8f7d530d025a6",
     "mikan115/following.py": "9c61414e898f1aa6aea08f69be1a317bebeb3dd174cb84e76772dbe613305af3",
     "mikan115/http_client.py": "b80065ac72d9b37920ea78cabfc09048657db2cba4e871e8518f62dcc1cae048",
-    "mikan115/metadata.py": "6961810cd69acd36202395226d44b68c6ac8573aa66dcfa72e6917515f71329f",
+    "mikan115/metadata.py": "139aa2b46132c5e5dd7e6bf48b5b475039a8587a09a6e04ac590495b8628cf61",
     "mikan115/mikan_parser.py": "f65d3c9e95b8e63ec2befee55b7b68be212f4ee52d7dcc476f12b597cb985456",
     "mikan115/organizer.py": "087a568274ddecd2f8423ee42f58749a8eeb69b41d37eb33bc86efed9795c4ed",
     "mikan115/pan115.py": "1f77663351661f0517770308adafea813e4461d6ac716d8d79bde2cda2f2b0d3",
-    "mikan115/presentation.py": "c87f742448f7ad66221971ba6b1201d7d3fe10362594b40e463a2f9f2fa51242",
+    "mikan115/presentation.py": "db2587dcf9664b90514f6b435b24e38db3fbdc338a4de3dc1a795d82b35f6e16",
+    "mikan115/public_presentation.py": "4350acb816760f0ff330ea8d39b06b22a85bfcaf5371e39150967bf7f08b7a88",
     "mikan115/releases.py": "aeb70dba9a33f7a76f6aefa6eae147d902097fbb30ed1ac0985d31f795f41edf",
     "mikan115/rss.py": "11cbcb3dc0bdc2f35e38205f386d6c0a97908d7f2e5c61a2ecb9efdb99eda749",
     "mikan115/search.py": "8f017a8e5669a43bedad32dd6b3d99a0fcb5ce31d803db892044c2fb2868fc56",
@@ -534,6 +591,6 @@
     "mikan115/workflow.py": "ff013af67e6cde1320f33869ff1f0344abf7738e5f9164774610eb2e5212f54c",
     "mikan115/__init__.py": "76cc8c988f15dfe1edb00c35815cba83409b22cb00ba60e592a90e16b11ad8b4",
     "static/assets/mikan115-app.js": "914ae28a12936f2489e53c4ffc0dc4b154fae793999afe408e4f9767987913af",
-    "static/mikan115-ui.js": "3ead72d6dcdb2eb49d7d2d267c647487865c59d36dcf53ecd89024b0ee4dc2c4"
+    "static/mikan115-ui.js": "60953c67958ce85452d3f7d8899cd382364f0f6e0ca3202b6551eb0e787b32b8"
   }
 }

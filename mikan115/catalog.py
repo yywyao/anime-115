@@ -17,6 +17,7 @@ from . import mikan_parser as parser
 from .torrent import torrent_magnet
 from .metadata import Metadata
 from .presentation import chinese, without_first_season
+from .public_presentation import PublicOverview
 from . import search as fuzzy
 from .releases import parse as parse_release
 
@@ -26,10 +27,14 @@ class Catalog:
         self.store,self.config,self.http=store,config,http or HTTP(timeout=4)
         self.seed=config.root/'seed'/'catalog.sqlite'
         self.metadata=metadata or Metadata(store)
+        self.public_overview=PublicOverview(store,http)
         self._lock=threading.RLock();self._inflight={};self._fail_until={};self._closed=False
         self._search_index=None;self._updater=None;self._update_stop=threading.Event();self._references=None
         self._public_tmdb=None;self._original_titles={};self._live_titles=None
+        self._public_logos=None;self._public_season_posters=None
         self._home_names=None;self._home_posters=None
+        self._presentation_updater=None
+        self._presentation_archive_cursor=0
         self.reconcile_public_seed()
 
     def reconcile_public_seed(self):
@@ -48,6 +53,7 @@ class Catalog:
     def close(self):
         self._closed=True;self._update_stop.set()
         if self._updater:self._updater.join(timeout=40)
+        if self._presentation_updater:self._presentation_updater.join(timeout=9)
         with self._lock:threads=list(self._inflight.values())
         for thread in threads:thread.join(timeout=9)
 
@@ -62,6 +68,12 @@ class Catalog:
                     with self._lock:self._inflight.pop(key,None)
             thread=threading.Thread(target=run,name='catalog-refresh',daemon=True)
             self._inflight[key]=thread;thread.start();return True
+
+    def pending_refresh(self,key,callback):
+        if self.background(key,callback):return True
+        with self._lock:
+            return key in self._inflight or (not self._closed and len(self._inflight)>=4
+                                            and self._fail_until.get(key,0)<=time.time())
 
     def seed_query(self,sql,args=()):
         if not self.seed.exists():return []
@@ -121,6 +133,7 @@ class Catalog:
 
     def start_updates(self):
         if not getattr(self.config,'catalog_auto_update',False) or self._updater:return
+        self.start_presentation_updates()
         from .catalog_sync import PublicFeeds,update_cross_references
         def run():
             while not self._update_stop.is_set():
@@ -132,6 +145,67 @@ class Catalog:
                 self.complete_pending_details()
                 self._update_stop.wait(60)
         self._updater=threading.Thread(target=run,name='catalog-updates',daemon=True);self._updater.start()
+
+    def start_presentation_updates(self):
+        if self._presentation_updater:return
+        def run():
+            while not self._update_stop.is_set():
+                try:self.update_presentation_batch()
+                except (AppError,sqlite3.Error):pass
+                self._update_stop.wait(45)
+        self._presentation_updater=threading.Thread(target=run,name='catalog-presentation',daemon=True)
+        self._presentation_updater.start()
+
+    def update_presentation_batch(self,limit=4):
+        """Warm release material without requiring a visit to each detail page."""
+        if self._closed:return 0
+        now=time.time()
+        current=self.current()
+        quarters=('冬','春','夏','秋')
+        current_order=current['year']*4+quarters.index(current['season'])
+        def priority(work):
+            year=work.get('year')
+            season=work.get('release_season')
+            order=(int(year)*4+quarters.index(season)) if str(year).isdigit() and season in quarters else 0
+            return (0 if order in (current_order,current_order+1) else 1,abs(current_order-order))
+        fresh={row['key'] for row in self.store.all(
+            "SELECT key FROM catalog_cache WHERE expires_at>? AND (key LIKE 'tmdb:%' OR (key LIKE 'bangumi:%' AND payload<>'\"\"'))",(now,))}
+        tmdb=self.metadata.status()['tmdb_configured']
+        ordered=sorted(self.all_works(),key=priority)
+        recent=[work for work in ordered if priority(work)[0]==0]
+        archive=[work for work in ordered if priority(work)[0]==1]
+        cursor=self._presentation_archive_cursor%len(archive) if archive else 0
+        rotated=archive[cursor:]+archive[:cursor]
+        posters=[]
+        selected=0
+        recent_selected=0
+        for index,work in enumerate(recent+rotated):
+            if self._closed or selected>=limit:break
+            is_recent=index<len(recent)
+            if archive and is_recent and recent_selected>=(limit+1)//2:continue
+            if not is_recent:self._presentation_archive_cursor=(cursor+index-len(recent)+1)%len(archive)
+            identity=self.tmdb_artwork_identity(work) if tmdb else None
+            scope=self.tmdb_scope(work) if tmdb else None
+            bid=self.public_overview.valid_id((work.get('provider_ids') or {}).get('bangumi'))
+            work_overview=self.local_overview(work)
+            known_posters={url for url in (work.get('mikan_poster_url'),work.get('poster_url') or work.get('image')) if url}
+            want_poster=len(known_posters)<2
+            queue_public=bid and (not work_overview or want_poster) and self.public_overview.retry_key(bid) not in fresh
+            if queue_public:
+                queue_public=((not work_overview and self.public_overview.cache_key(bid) not in fresh)
+                              or (want_poster and self.public_overview.poster_key(bid) not in fresh))
+            queue_title=scope and self.tmdb_cache_key('tmdb:v3',scope) not in fresh
+            queue_art=identity and self.tmdb_cache_key('tmdb:artwork:v1',identity) not in fresh
+            queue_poster=scope and self.tmdb_cache_key('tmdb:poster-ja:v1',scope[:3]) not in fresh
+            if not (queue_public or queue_title or queue_art or queue_poster):continue
+            selected+=1
+            if is_recent:recent_selected+=1
+            if queue_art:self.queue_tmdb_artwork(identity)
+            if queue_title:self.queue_tmdb_title(scope)
+            if queue_public:self.queue_public_presentation(bid,need_overview=not work_overview,need_poster=want_poster)
+            if queue_poster:posters.append(work)
+        if posters:self.refresh_home_posters(posters,'background','all')
+        return selected
 
     def complete_pending_details(self,limit=5):
         rows=self.store.all("SELECT payload FROM catalog_works WHERE mikan_id!='' AND (json_extract(payload,'$.provider_ids.bangumi') IS NULL OR json_extract(payload,'$.provider_ids.bangumi')='') ORDER BY updated_at DESC")
@@ -247,11 +321,22 @@ class Catalog:
             for i in range(0,len(ids),500):
                 batch=ids[i:i+500]
                 works.extend(self.seed_rows('WHERE id IN ('+','.join('?' for _ in batch)+')',batch,len(batch)))
-        titles={work['id']:{**self.home_presentation(work),'tmdbTitle':self.tmdb_display(work)} for work in works}
+        bids={self.public_overview.valid_id((work.get('provider_ids') or {}).get('bangumi')) for work in works}
+        public_covers=self.public_overview.cached_posters(bids)
+        titles={work['id']:{**self.home_presentation(work,public_covers),'tmdbTitle':self.tmdb_display(work)} for work in works}
         pending=self.refresh_home_posters(works,data.get('year'),data.get('season'))
+        requested=set()
+        for work in works:
+            if len(requested)>=2:break
+            if titles[work['id']]['homePosterFallback']:continue
+            bid=self.public_overview.valid_id((work.get('provider_ids') or {}).get('bangumi'))
+            if bid and bid not in requested:
+                if self.queue_public_presentation(bid,need_overview=False,need_poster=True):
+                    requested.add(bid)
+                    pending=True
         def overlay(item):
             fields=titles.get(item.get('id'))
-            return {**item,**(fields if fields is not None else self.home_presentation(item))}
+            return {**item,**(fields if fields is not None else self.home_presentation(item,public_covers))}
         return {**data,'refreshing':bool(data.get('refreshing') or pending),
                 'days':[{**group,'items':[overlay(item) for item in group['items']]} for group in data.get('days',[])],
                 'bangumis':[overlay(item) for item in data.get('bangumis',[])],
@@ -288,7 +373,7 @@ class Catalog:
             title=self.metadata.display_title(title,season)
         return title
 
-    def home_presentation(self,work):
+    def home_presentation(self,work,public_covers=None):
         title=self.home_title(work)
         scope=self.tmdb_scope(work)
         poster=''
@@ -298,7 +383,25 @@ class Catalog:
                 cached=self._home_posters.get(key,('',0))[0]
             url=cached or self._public_posters.get(self.tmdb_cache_key('',scope[:3]).lstrip(':'),'')
             poster=self.metadata.artwork_url(url,'w500')
-        return {'homeTitle':title,'homePoster':poster or work.get('mikan_poster_url') or ''}
+        # These are existing poster fields, never a banner, backdrop, still or title logo.
+        candidates=[poster,work.get('mikan_poster_url')]
+        original=work.get('poster_url') or work.get('image')
+        if original and not work.get('tmdb_link_conflict') and original!=work.get('backdrop_url'):
+            candidates.append(original)
+        if scope:
+            kind,ident,season,_=scope
+            public=self.public_tmdb_data(kind,ident)
+            if season is not None:
+                candidates.append(self.metadata.artwork_url(self._public_season_posters.get(f'{ident}:{season}'),'w500'))
+            if kind=='movie' or season==1:
+                candidates.append(self.metadata.artwork_url(public.get('poster_url') or public.get('poster_path'),'w500'))
+        if len({url for url in candidates if url})<2:
+            bid=self.public_overview.valid_id((work.get('provider_ids') or {}).get('bangumi'))
+            if bid:
+                candidates.append(self.public_overview.cached_poster(bid) if public_covers is None else public_covers.get(bid))
+        candidates=list(dict.fromkeys(url for url in candidates if url))
+        poster,backup=(candidates+['',''])[:2]
+        return {'homeTitle':title,'homePoster':poster,'homePosterFallback':backup}
 
     def refresh_home_posters(self,works,year,season):
         if not works or not self.metadata.status()['tmdb_configured']:return False
@@ -315,12 +418,13 @@ class Catalog:
         def refresh():
             for key,scope in scopes.items():
                 if self._closed:return
-                try:url=self.metadata.poster(*scope)
+                previous=self._home_posters.get(key,('',0))[0]
+                try:url=self.metadata.poster(*scope) or previous
                 except AppError:
                     # Keep a previously verified image when TMDB is unavailable.
-                    url=self._home_posters.get(key,('',0))[0]
+                    url=previous
                     ttl=120
-                else:ttl=86400
+                else:ttl=86400 if url else 1800
                 self.store.cache_set(key,url,ttl)
                 with self._lock:self._home_posters[key]=(url,time.time()+ttl)
         self.background(refresh_key,refresh)
@@ -334,24 +438,38 @@ class Catalog:
         if title:out['tmdbTitle']=title
         return out
 
+    @staticmethod
+    def local_overview(work):
+        return next((value for text in (work.get('overview_zh'),work.get('overview'))
+                     if (value:=chinese(text,overview=True))),'')
+
+    def queue_public_presentation(self,bid,*,need_overview,need_poster):
+        key='bangumi:presentation:'+bid
+        if self.public_overview.should_refresh(bid,need_overview=need_overview,need_poster=need_poster):
+            return self.pending_refresh(key,lambda:self.public_overview.refresh(
+                bid,need_overview=need_overview,need_poster=need_poster))
+        with self._lock:return key in self._inflight
+
     def present_detail(self,work):
         out=self.detail_artwork(self.enrich(work))
         out['homeTitle']=self.home_title(out)
-        overview=next((value for text in (work.get('overview_zh'),work.get('overview'),out.get('overview'))
-                       if (value:=chinese(text,overview=True))),'')
-        bid=str((work.get('provider_ids') or {}).get('bangumi') or '')
-        if not overview and bid.isdigit():
-            key='bangumi:overview-zh:'+bid
-            cached=self.store.cache_get(key,stale=True)
-            if self.store.cache_get(key) is None:
-                def refresh():
-                    data=self.http.json('GET','https://api.bgm.tv/v0/subjects/'+bid,
-                                        headers={'User-Agent':'Mikan115/1.0 (public catalog)'})
-                    if str(data.get('id'))==bid and not self._closed:
-                        self.store.cache_set(key,chinese(data.get('summary'),overview=True),86400)
-                self.background(key,refresh)
-            overview=chinese(cached,overview=True)
-            out['metadata_pending']=bool(out.get('metadata_pending') or key in self._inflight)
+        overview=chinese(out.get('overview_zh'),overview=True) or self.local_overview(work) or self.local_overview(out)
+        scope=self.tmdb_scope(work)
+        if not overview and scope:
+            kind,ident,season,episode=scope
+            public=self.public_tmdb_data(kind,ident)
+            if kind=='movie' or (season==1 and episode is None):
+                overview=self.local_overview(public)
+            if episode is None and season is not None:
+                for row in public.get('seasons') or []:
+                    if row.get('season_number')==season:
+                        overview=self.local_overview(row) or overview
+                        break
+        bid=self.public_overview.valid_id((work.get('provider_ids') or {}).get('bangumi'))
+        if not overview and bid:
+            pending=self.queue_public_presentation(bid,need_overview=True,need_poster=False)
+            overview=chinese(self.public_overview.cached(bid),overview=True)
+            out['metadata_pending']=bool(out.get('metadata_pending') or pending)
         out['overviewZh']=overview
         return out
 
@@ -424,10 +542,7 @@ class Catalog:
                 works.setdefault(scope,row)
         return self.enrich(next(iter(works.values()))) if len(works)==1 else None
 
-    def tmdb_display(self,work):
-        scope=self.tmdb_scope(work)
-        if not scope:return ''
-        kind,ident,season,episode=scope
+    def public_tmdb_data(self,kind,ident):
         with self._lock:
             if self._public_tmdb is None:
                 self._public_tmdb={}
@@ -441,11 +556,25 @@ class Catalog:
                     if media=='series':media='tv'
                     if media in {'tv','movie'}:
                         self._public_tmdb.setdefault((media,row['external_id']),{}).update(data)
+                logos=self.seed.with_name('tmdb-japanese-logos.json')
+                self._public_logos=json.loads(logos.read_text(encoding='utf-8')) if logos.is_file() else {}
+                self._public_season_posters={}
+                for row in self.seed_query('SELECT cache_key,payload FROM season_artwork'):
+                    data=json.loads(row['payload'])
+                    if data.get('status')=='RESOLVED' and row['cache_key'].endswith(':'+str(data.get('season_number'))):
+                        self._public_season_posters[row['cache_key']]=data.get('season_poster_url')
+            return self._public_tmdb.get((kind,ident),{})
+
+    def tmdb_display(self,work):
+        scope=self.tmdb_scope(work)
+        if not scope:return ''
+        kind,ident,season,episode=scope
+        data=self.public_tmdb_data(kind,ident)
+        with self._lock:
             if self._live_titles is None:
                 rows=self.store.all("SELECT key,payload FROM catalog_cache WHERE key LIKE 'tmdb:display:v1:%'")
                 self._live_titles={row['key']:json.loads(row['payload']) for row in rows}
             live=self._live_titles.get(self.tmdb_cache_key('tmdb:display:v1',scope))
-            data=self._public_tmdb.get((kind,ident),{})
         if live:return without_first_season(live) if season==1 else live
         series=(data.get('name') or data.get('title') or data.get('original_name') or data.get('original_title')
                 or self._original_titles.get(kind,{}).get(ident,''))
@@ -456,6 +585,29 @@ class Catalog:
             return Metadata.episode_display_title(series,season,episode,item.get('name') or item.get('title'))
         season_title=next((s.get('name') for s in data.get('seasons') or [] if s.get('season_number')==season),'')
         return Metadata.display_title(series,season,season_title)
+
+    def queue_tmdb_title(self,scope,cached=None):
+        kind,ident,season,episode=scope
+        key=self.tmdb_cache_key('tmdb:v3',scope)
+        if self.store.cache_get(key) is not None:return False
+        if cached is None:cached=self.store.cache_get(key,stale=True)
+        def refresh():
+            try:result=self.metadata.title(kind,ident,season,episode=episode) if episode is not None else self.metadata.title(kind,ident,season)
+            except AppError:
+                if not self._closed:self.store.cache_set(key,cached or {},300)
+                return
+            if self._closed:return
+            if not result.get('overview_zh') and cached and cached.get('overview_zh'):
+                result['overview_zh']=cached['overview_zh']
+            if result.get('tmdbTitle'):
+                label_key=self.tmdb_cache_key('tmdb:display:v1',scope)
+                self.store.cache_set(label_key,result['tmdbTitle'],86400)
+                with self._lock:
+                    if self._live_titles is not None:self._live_titles[label_key]=result['tmdbTitle']
+                    self._search_index=None
+            ttl=86400 if result.get('overview_zh') else 3600
+            self.store.cache_set(key,result,ttl)
+        return self.pending_refresh(key,refresh)
 
     def enrich(self,work):
         scope=self.tmdb_scope(work)
@@ -478,59 +630,79 @@ class Catalog:
                 name=next((s.get('name') for s in old.get('seasons') or [] if s.get('season_number')==season),'')
                 cached={**old,'tmdbTitle':Metadata.display_title(old.get('title'),season,name)}
                 if kind=='tv':cached.pop('ratings',None)
-        if self.metadata.status()['tmdb_configured'] and self.store.cache_get(key) is None:
-            def refresh():
-                result=self.metadata.title(kind,ident,season,episode=episode) if episode is not None else self.metadata.title(kind,ident,season)
-                if self._closed:return
-                if result.get('tmdbTitle'):
-                    label_key=self.tmdb_cache_key('tmdb:display:v1',scope)
-                    self.store.cache_set(label_key,result['tmdbTitle'],86400)
-                    with self._lock:
-                        if self._live_titles.get(label_key)!=result['tmdbTitle']:
-                            self._live_titles[label_key]=result['tmdbTitle']
-                            self._search_index=None
-                self.store.cache_set(key,result,86400)
-            self.background(key,refresh)
-        if not cached:return {**out,'metadata_pending':key in self._inflight}
+        pending=self.metadata.status()['tmdb_configured'] and self.queue_tmdb_title(scope,cached)
+        if not cached:return {**out,'metadata_pending':pending}
         if cached.get('tmdbTitle'):out['tmdbTitle']=cached['tmdbTitle']
-        for field in ['poster_url','backdrop_url','overview','genres','episodes','seasons','credits']:
+        for field in ['poster_url','backdrop_url','overview','overview_zh','genres','episodes','seasons','credits']:
             if field=='credits' and not any((cached.get('credits') or {}).values()):continue
             if cached.get(field):out[field]=cached[field]
         if out.get('poster_url'):out['image']=out['poster_url']
         out['ratings']={**(work.get('ratings') or {}),**(cached.get('ratings') or {})}
-        out['metadata_pending']=key in self._inflight
+        out['metadata_pending']=pending
         return out
+
+    @staticmethod
+    def tmdb_artwork_identity(work):
+        provider=(work.get('provider_ids') or {}).get('tmdb')
+        ident=work.get('tmdb_id') or provider
+        mapping=work.get('tmdb_mapping') or {}
+        if not str(ident or '').isdigit() or work.get('tmdb_link_conflict') or mapping.get('status')=='multiple_works':return None
+        if any(value is not None and str(value)!=str(ident) for value in (provider,mapping.get('id'))):return None
+        kind=mapping.get('type') or ('movie' if work.get('media_type')=='movie' else 'tv')
+        return (kind,str(ident)) if kind in {'movie','tv'} else None
+
+    def queue_tmdb_artwork(self,identity,cached=None):
+        kind,ident=identity
+        key=self.tmdb_cache_key('tmdb:artwork:v1',identity)
+        if self.store.cache_get(key) is not None:return False
+        if cached is None:cached=self.store.cache_get(key,stale=True) or {}
+        def refresh():
+            try:result=self.metadata.artwork(kind,ident)
+            except AppError:
+                if not self._closed:self.store.cache_set(key,cached,300)
+                return
+            if self._closed:return
+            if not result.get('backdrops'):result['backdrops']=cached.get('backdrops',[])
+            if not result.get('logos') and cached.get('logo_language')=='ja':
+                result['logos']=cached.get('logos',[])
+                result['logo_language']='ja' if result['logos'] else None
+            ttl=86400 if result.get('logos') and result.get('backdrops') else 1800
+            self.store.cache_set(key,result,ttl)
+        return self.pending_refresh(key,refresh)
 
     def detail_artwork(self,work):
         out={**work,'detail_artwork':{'backdrops':[],'logos':[],'logo_language':None}}
-        ident=work.get('tmdb_id') or (work.get('provider_ids') or {}).get('tmdb')
-        mapping=work.get('tmdb_mapping') or {}
-        if not str(ident or '').isdigit() or work.get('tmdb_link_conflict') or mapping.get('status')=='multiple_works':return out
-        kind='movie' if mapping.get('type')=='movie' or work.get('media_type')=='movie' else 'tv'
+        identity=self.tmdb_artwork_identity(work)
+        if not identity:return out
+        kind,ident=identity
+        public=self.public_tmdb_data(kind,ident)
         key=f'tmdb:artwork:v1:{kind}:{ident}'
-        cached=self.store.cache_get(key,stale=True)
-        if self.metadata.status()['tmdb_configured'] and self.store.cache_get(key) is None:
-            def refresh():
-                result=self.metadata.artwork(kind,ident)
-                if not self._closed:self.store.cache_set(key,result,86400)
-            self.background(key,refresh)
-        if cached is None:
-            seed_key=f'tmdb:artwork:seed:v1:{kind}:{ident}'
+        cached=self.store.cache_get(key,stale=True) or {}
+        pending=self.metadata.status()['tmdb_configured'] and self.queue_tmdb_artwork(identity,cached)
+        logos=cached.get('logos',[]) if cached.get('logo_language')=='ja' else []
+        if not logos:
+            seed_key=f'tmdb:artwork:seed:v2:{kind}:{ident}'
             seed=self.store.cache_get(seed_key)
             if seed is None:
-                logos=[]
+                candidates=[{'language':'ja','url':url} for url in self._public_logos.get(f'{kind}:{ident}',[])]
                 sources=[work]
                 sources.extend(json.loads(r['payload']) for r in self.seed_query("SELECT payload FROM works WHERE CAST(json_extract(payload,'$.tmdb_id') AS TEXT)=? AND json_type(payload,'$.logos')='array' LIMIT 20",(str(ident),)))
                 sources.extend(json.loads(r['payload']) for r in self.seed_query("SELECT payload FROM provider_metadata WHERE provider='TMDB_DETAIL' AND external_id=?",(str(ident),)))
                 for source in sources:
                     source_kind='movie' if (source.get('tmdb_mapping') or {}).get('type')=='movie' or source.get('media_type')=='movie' else 'tv'
                     if source_kind!=kind or source.get('tmdb_link_conflict'):continue
-                    logos.extend((source.get('images') or source).get('logos') or [])
-                seed=self.metadata.select_artwork({'logos':logos})
+                    candidates.extend((source.get('images') or source).get('logos') or [])
+                seed=self.metadata.select_artwork({'logos':candidates})
                 self.store.cache_set(seed_key,seed,86400)
-            cached={**seed,'backdrops':self.metadata.select_artwork({},legacy_backdrop=work.get('backdrop_url'))['backdrops']}
-        out['detail_artwork']={**cached,'tmdb_id':int(ident),'media_type':kind}
-        out['metadata_pending']=bool(work.get('metadata_pending') or key in self._inflight)
+            logos=seed.get('logos',[]) if seed.get('logo_language')=='ja' else []
+        blocked=set(cached.get('excluded_backdrops') or [])
+        backdrops=[url for url in cached.get('backdrops',[]) if url not in blocked]
+        if not backdrops:
+            legacy=[self.metadata.artwork_url(url,'w1280') for url in (work.get('backdrop_url'),public.get('backdrop_url'))]
+            backdrops=list(dict.fromkeys(url for url in legacy if url and url not in blocked))
+        out['detail_artwork']={'backdrops':backdrops,'logos':logos,'logo_language':'ja' if logos else None,
+                               'tmdb_id':int(ident),'media_type':kind}
+        out['metadata_pending']=bool(work.get('metadata_pending') or pending)
         return out
 
     def person(self,ident):

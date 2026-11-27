@@ -6,7 +6,7 @@ import urllib.parse
 
 from .errors import AppError,ProviderError
 from .http_client import HTTP
-from .presentation import without_first_season
+from .presentation import chinese, without_first_season
 
 class Metadata:
     def __init__(self,store,http=None,base='https://api.themoviedb.org/3'):
@@ -99,7 +99,23 @@ class Metadata:
         kind='movie' if media_type=='movie' else 'tv'
         if not str(ident).isdigit():raise AppError('INVALID_PROVIDER_ID','作品不存在',404)
         images=self.call('/'+kind+'/'+str(ident)+'/images',{'language':'ja','include_image_language':'ja,null'})
-        return self.select_artwork(images)
+        artwork=self.select_artwork(images)
+        artwork['excluded_backdrops']=[url for row in images.get('backdrops',[]) if isinstance(row,dict)
+                                      and row.get('iso_639_1',row.get('language')) not in (None,'','null')
+                                      and (url:=self.artwork_url(row.get('file_path'),'w1280'))]
+        return artwork
+
+    @staticmethod
+    def chinese_overview(data):
+        overview=chinese(data.get('overview'),overview=True)
+        if overview:return overview
+        translations=(data.get('translations') or {}).get('translations') or []
+        for country in ('CN','TW','HK','SG'):
+            for row in translations:
+                if row.get('iso_639_1')=='zh' and row.get('iso_3166_1')==country:
+                    overview=chinese((row.get('data') or {}).get('overview'),overview=True)
+                    if overview:return overview
+        return ''
 
     @classmethod
     def japanese_posters(cls,data):
@@ -139,13 +155,14 @@ class Metadata:
     def title(self,media_type,ident,season=None,*,episode=None):
         kind='movie' if media_type=='movie' else 'tv'
         if not str(ident).isdigit():raise AppError('INVALID_PROVIDER_ID','作品不存在',404)
-        data=self.call('/'+kind+'/'+str(ident),{'language':'zh-CN','append_to_response':'credits'})
+        data=self.call('/'+kind+'/'+str(ident),{'language':'zh-CN','append_to_response':'credits,translations'})
         if str(data.get('id'))!=str(ident):
             raise ProviderError('TMDB_ID_MISMATCH','TMDB 作品不一致，请重试')
         result={'tmdb_id':int(ident),'media_type':'movie' if kind=='movie' else 'series',
                 'title':data.get('name') or data.get('title') or '',
                 'title_original':data.get('original_name') or data.get('original_title') or '',
                 'overview':data.get('overview') or '',
+                'overview_zh':self.chinese_overview(data),
                 'poster_url':self.image(data.get('poster_path')),
                 'backdrop_url':self.image(data.get('backdrop_path'),'w1280'),
                 'year':int((data.get('first_air_date') or data.get('release_date') or '0')[:4] or 0) or None,
@@ -162,21 +179,23 @@ class Metadata:
             result['tmdbTitle']=series_title
             return result
         selected=int(season)
-        result.update(poster_url='',backdrop_url='',overview='',year=None,ratings={},vote_count=0)
+        parent_overview=result['overview_zh']
+        result.update(poster_url='',backdrop_url='',overview='',overview_zh='',year=None,ratings={},vote_count=0)
         known={int(s['season_number']):s for s in data.get('seasons',[]) if s.get('season_number') is not None}
         if selected not in known:
             return result
         path='/tv/'+str(ident)+'/season/'+str(selected)
         if episode is not None:
-            details=self.call(path+'/episode/'+str(episode),{'language':'zh-CN'})
+            details=self.call(path+'/episode/'+str(episode),{'language':'zh-CN','append_to_response':'translations'})
             if details.get('season_number')!=selected or details.get('episode_number')!=episode:
                 raise ProviderError('TMDB_ID_MISMATCH','TMDB 集数不一致，请重试')
             result['tmdbTitle']=self.episode_display_title(series_title,selected,episode,details.get('name'))
             result['episodes']=[self.episode_details(details,selected)]
             result['overview']=details.get('overview') or ''
+            result['overview_zh']=self.chinese_overview(details)
             result['year']=int((details.get('air_date') or '0')[:4] or 0) or None
             return result
-        details=self.call(path,{'language':'zh-CN'})
+        details=self.call(path,{'language':'zh-CN','append_to_response':'translations'})
         if details.get('season_number',selected)!=selected:
             raise ProviderError('TMDB_ID_MISMATCH','TMDB 季号不一致，请重试')
         result['seasons']=[{'season_number':selected,'name':details.get('name') or f'第 {selected} 季',
@@ -186,6 +205,9 @@ class Metadata:
         result['tmdbTitle']=self.display_title(series_title,selected,details.get('name'))
         result['poster_url']=self.image(details.get('poster_path'))
         result['overview']=details.get('overview') or ''
+        result['overview_zh']=self.chinese_overview(details)
+        if not result['overview_zh'] and selected==1 and {n for n in known if n>0}=={1}:
+            result['overview_zh']=parent_overview
         result['year']=int((details.get('air_date') or '0')[:4] or 0) or None
         result['episodes']=[self.episode_details(e,selected) for e in details.get('episodes',[])
                             if e.get('episode_number') and e.get('season_number',selected)==selected]

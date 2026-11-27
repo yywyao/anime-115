@@ -1,0 +1,28 @@
+{
+  "success": true,
+  "scope": "Local application with real exact-ID public synopsis; image bytes and the slow retry case use fixtures.",
+  "results": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 900
+      },
+      "work": "catalog~206949",
+      "exact_backdrop": true,
+      "verified_japanese_logo": true,
+      "public_chinese_synopsis": true
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "work": "catalog~206949",
+      "exact_backdrop": true,
+      "verified_japanese_logo": true,
+      "public_chinese_synopsis": true
+    }
+  ],
+  "slow_refresh_recovered": true,
+  "slow_case_requests": 7
+}
