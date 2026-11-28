@@ -25,8 +25,8 @@
       "size": 15487
     },
     "mikan115/cloud_layout.py": {
-      "sha": "ec774c61970c69b4246facab6d76a9250cac1a2c",
-      "size": 17696
+      "sha": "ecfac571e5dd50bcf16848968cf18609d2bae1e2",
+      "size": 18765
     },
     "mikan115/config.py": {
       "sha": "5849f7877b6478c5c0c88e8510ce9cb79f639a0b",
@@ -53,12 +53,16 @@
       "size": 2699
     },
     "mikan115/inventory.py": {
-      "sha": "0420742179e6841c12d05f69191cb3cf9cbea90d",
-      "size": 9570
+      "sha": "18fd4156b3ea40343a78bd37c20bf1765ddc9058",
+      "size": 9606
     },
     "mikan115/library.py": {
-      "sha": "68beb1a97e3b3a4ec075790f01edde927813a4fc",
-      "size": 30241
+      "sha": "3c2c3bfa3460fab1e49b76935925a055d1350f7b",
+      "size": 30491
+    },
+    "mikan115/library_paths.py": {
+      "sha": "992150338ed884cc4426254f3867c7322df50322",
+      "size": 5328
     },
     "mikan115/magnet_import.py": {
       "sha": "8e5ccb9d9854d3bc3a93d35da697d1555029cecf",
@@ -101,8 +105,8 @@
       "size": 1975
     },
     "mikan115/server.py": {
-      "sha": "b7cdedc9afc2738a9abe3e3f08fe66d3894602c6",
-      "size": 31198
+      "sha": "b78ba6e5b540d6b92fedeb1ad41af27ed6029d07",
+      "size": 31856
     },
     "mikan115/sonarr.py": {
       "sha": "af4a42f88e2d68b07fc58f4138efeb585a0eda18",
@@ -113,8 +117,8 @@
       "size": 10935
     },
     "mikan115/supervisor.py": {
-      "sha": "2d0f5b880b251329c220e5bfadfbe25b68bf622e",
-      "size": 9219
+      "sha": "2d0adaa729585da7ff7efcdf7a9abad926cf59e4",
+      "size": 9286
     },
     "mikan115/torrent.py": {
       "sha": "2e91e5817ac7125a6789472fd6959fa37896a560",
@@ -125,12 +129,12 @@
       "size": 3904
     },
     "mikan115/updater.py": {
-      "sha": "f81b66e3303683b22327ba7a9948b82ad8cf7790",
-      "size": 15712
+      "sha": "c1611aba163a07c43f86dd32cecccc07c69617bc",
+      "size": 17204
     },
     "mikan115/workflow.py": {
-      "sha": "ba549476bfd70d47fa948c80924a5c648077adf8",
-      "size": 28789
+      "sha": "355108d1d3330ca14ab7c86c1a79410f6105ed55",
+      "size": 33284
     },
     "requirements.txt": {
       "sha": "3d77201177d448b3aadf36527b64b33cac6763ad",
@@ -185,12 +189,12 @@
       "size": 221313
     },
     "static/mikan115-ui.js": {
-      "sha": "365baf3af09b7b0069005493c9590897d7d74087",
-      "size": 95843
+      "sha": "c4bf169dc57469cce6d09c9be8f4ed923d5f1989",
+      "size": 97402
     },
     "static/mikan115.css": {
-      "sha": "89e6c9f9d102ed327a18b6c6a32b424ed03d7292",
-      "size": 33337
+      "sha": "9b12495ef9a5ebc3d340b6bd4c3394cf1facceb0",
+      "size": 33597
     },
     "static/provider-logos/anilist.svg": {
       "sha": "96360866f1eac59ab16baa8b5d36ea698677c4d8",
@@ -231,5 +235,5 @@
   },
   "protocol": 1,
   "repository": "yywyao/anime-115",
-  "version": "9e8d3fc664968b6af5a109de93e6c862a5afda47"
+  "version": "8f4113da1ea1b6a594117d3ceb5ef0d77cfafebd"
 }
