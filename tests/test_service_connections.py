@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from urllib.parse import urlsplit
 
 from mikan115.alist import Alist
@@ -128,6 +129,19 @@ class ServiceConnections(unittest.TestCase):
         self.assertIn('ALIST_PASSWORD=',text)
         self.assertNotIn('SONARR_API_KEY=',text)
         self.assertNotIn('SONARR_MANAGED=0',text)
+
+    def test_first_start_never_prints_the_private_setup_token(self):
+        from mikan115.server import main
+        private='private-setup-token-for-test-123456'
+        config=Config(root=self.root,data=self.root/'new-instance',setup_token=private)
+        output=io.StringIO()
+        with patch('mikan115.server.Config.from_env',return_value=config), \
+             patch('mikan115.server.Application.start_worker'), \
+             patch('mikan115.server.Server') as server,contextlib.redirect_stdout(output):
+            server.return_value.serve_forever.side_effect=KeyboardInterrupt
+            main()
+        self.assertNotIn(private,output.getvalue())
+        self.assertIn('Administrator setup required.',output.getvalue())
 
 
 class ServiceHTTPAuthorization(Harness):

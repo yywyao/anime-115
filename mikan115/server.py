@@ -410,10 +410,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
 def main():
     config=Config.from_env();app=Application(config)
     if app.auth.setup_required():
-        token=config.setup_token or app.store.setting('setup_token')
-        print('First-run local-account setup token (keep private): '+token,flush=True)
+        print('Administrator setup required.',flush=True)
     server=Server((config.host,config.port),app);app.start_worker()
-    print(f'Mikan115 listening on {config.host}:{config.port}; 115 credentials are not configured automatically.',flush=True)
+    print(f'Mikan115 listening on {config.host}:{config.port}',flush=True)
     try:server.serve_forever()
     except KeyboardInterrupt:pass
     finally:app.close();server.server_close()
