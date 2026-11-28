@@ -1,7 +1,8 @@
 {
-  "verified_utc": "2026-11-28T03:48:44.017453+00:00",
+  "verified_utc": "2026-11-28T03:51:43.369407+00:00",
   "windows_backend_tests": 178,
   "frontend_tests": 10,
+  "linux_scoped_tests": 7,
   "browser": {
     "success": true,
     "scope": "Local HTTP fixtures with simulated Mikan RSS and cloud transfers.",
@@ -19,6 +20,7 @@
         "automatic_future_release": true,
         "other_groups_excluded": true,
         "automatic_rss_import_preview": true,
+        "focus_restored": true,
         "scheduler": "Initial due time advanced in an isolated fixture.",
         "page_errors": 0
       },
@@ -35,6 +37,7 @@
         "automatic_future_release": true,
         "other_groups_excluded": true,
         "automatic_rss_import_preview": true,
+        "focus_restored": true,
         "scheduler": "Initial due time advanced in an isolated fixture.",
         "page_errors": 0
       }

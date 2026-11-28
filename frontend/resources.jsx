@@ -33,6 +33,7 @@ export function ResourceModal({work,close}){
   const [message,setMessage]=useState('');
   const [login,setLogin]=useState(false);
   const request=useRef(0);
+  const invoker=useRef(document.activeElement);
   const subscriptions=useFollowing();
   const ident=String(work.canonical_id||work.id||work.mikan_id||work.bangumiId||'');
   const bid=String(data?.bangumi_id||work.mikan_id||work.bangumiId||'');
@@ -45,6 +46,10 @@ export function ResourceModal({work,close}){
   const currentSubscription=groupId=>subscriptions.find(item=>
     String(item.bangumi_id)===bid&&String(item.subgroup_id||'0')===String(groupId||'0')
   );
+
+  useEffect(()=>()=>queueMicrotask(()=>{
+    if(invoker.current?.isConnected)invoker.current.focus();
+  }),[]);
 
   function failed(exception){
     setError(exception.message);
