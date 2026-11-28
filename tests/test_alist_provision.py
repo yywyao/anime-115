@@ -11,6 +11,7 @@ COOKIE='UID=501; CID=cid-1; SEID=session-1'
 
 
 class Store:
+    instance_id='test-client-id'
     def __init__(self):
         self.values={}
 

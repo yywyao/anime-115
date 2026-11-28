@@ -26,27 +26,19 @@
 ```bash
 git clone https://github.com/yywyao/anime-115.git
 cd anime-115
-python3 tools/configure.py
-docker compose up -d --build
+python3 tools/start.py
 ```
 
-初始化脚本生成私有 `.env` 文件及运行数据目录。已有配置时无需再次运行。
+启动命令自动准备私有配置，启动网站、AList 和 Sonarr。已有配置会保留。
 
-查看服务状态：
+查看服务状态可运行以下命令。
 
 ```bash
 docker compose ps
 docker compose logs -f app
 ```
 
-默认服务地址：
-
-| 服务 | 地址 |
-| --- | --- |
-| Mikan115 | http://127.0.0.1:8788 |
-| AList | http://127.0.0.1:5244 |
-
-两个服务默认仅监听本机地址。远程服务器可通过 SSH 端口转发访问：
+打开网站 `http://127.0.0.1:8788`。AList 和 Sonarr 使用同一部署的私有网络，地址及认证信息自动配置。远程服务器可通过 SSH 端口转发访问网站。
 
 ```bash
 ssh -L 8788:127.0.0.1:8788 user@server
@@ -57,8 +49,8 @@ ssh -L 8788:127.0.0.1:8788 user@server
 ### 初始化
 
 1. 打开 Mikan115，使用 `.env` 中的 `MIKAN_SETUP_TOKEN` 创建管理员账号。
-2. 在设置中粘贴一次已有的 115 第三方客户端 Cookie。应用会用它验证 115 会话并挂载 AList 的 115 存储，Compose 负责 AList 管理认证。
-3. 按需填写 TMDB API。需要 Sonarr 校对时，可在部署时启用托管服务。 [使用与维护指南](docs/usage.md)
+2. 在设置中粘贴一次已有的 115 第三方客户端 Cookie，应用会验证会话并自动挂载 AList 的 115 存储。
+3. 按需填写 TMDB API。AList 和 Sonarr 默认使用自动配置，也可在设置中切换「自定义」并随时恢复自动配置。 [使用与维护指南](docs/usage.md)
 4. 浏览动漫资源，创建转存任务或 RSS 订阅。
 
 ## 工作流程
@@ -80,13 +72,12 @@ flowchart LR
 | 配置项 | 用途 |
 | --- | --- |
 | `MIKAN_PORT` | Web 服务端口，默认 8788 |
-| `ALIST_PORT` | AList 端口，默认 5244 |
 | `MIKAN_SECURE_COOKIE` | HTTPS 部署时设置为 1 |
 | `MIKAN_URL` | 蜜柑计划服务地址 |
 | `MIKAN_SETUP_TOKEN` | 首次管理员初始化令牌 |
-| `ALIST_PASSWORD` | AList 管理密码 |
+| `ALIST_PASSWORD` | 自动生成的本机服务部署凭据 |
 
-完整配置示例见 [`.env.example`](.env.example)。115 Cookie、TMDB 凭据及 Sonarr API Key 通过管理员设置管理，请勿将真实凭据提交到仓库。
+115 Cookie、TMDB 凭据及自定义服务凭据通过管理员设置加密保存。自动模式会获取 AList 管理令牌并配置 Sonarr API Key。完整配置模板参见 [`.env.example`](.env.example)。
 
 ## 更新与备份
 

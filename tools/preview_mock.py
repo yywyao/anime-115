@@ -14,7 +14,10 @@ with tempfile.TemporaryDirectory(prefix='mikan115-ui-',dir=root.parent) as temp:
     state=State();mock=MockServer(state).start()
     state.following_demo=a.following_demo
     if a.following_demo:state.rss_items=[{'hash':'a'*40,'title':'[测试字幕组] 测试动漫 S02E01 [简日][1080p]'}]
-    config=Config(root=root,data=pathlib.Path(temp),mikan_url=mock.base,alist_url=mock.base,alist_password='artificial-alist-password',setup_token='ui-preview-setup-token')
+    config=Config(root=root,data=pathlib.Path(temp),mikan_url=mock.base,alist_url=mock.base,
+                  alist_password='artificial-alist-password',setup_token='ui-preview-setup-token',
+                  alist_managed=True,sonarr_managed=True,sonarr_url=mock.base,
+                  sonarr_api_key='artificial-sonarr-api-key-123456')
     store=Store(config.data);alist=Alist(config,store,LocalOnlyHTTP(3));catalog=Catalog(store,config,LocalOnlyHTTP(3))
     catalog.seed=pathlib.Path(temp)/'nonexistent-seed.sqlite'
     pan=lambda ck:Pan115(ck,LocalOnlyHTTP(3),my_base=mock.base+'/115-user',web_base=mock.base+'/115-web',offline_base=mock.base+'/115-offline')

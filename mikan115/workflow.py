@@ -52,6 +52,7 @@ class Workflow:
     def connection_status(self):
         b=self.store.binding(False)
         pending=bool(self.store.setting('pending_115_cookie'))
+        alist=self.alist.status()
         return {'configured':bool(b or pending),'ready':bool(b and b['ready']),
                 'account_uid':b['account_uid'] if b else None,
                 'account_name':b['account_name'] if b else None,
@@ -59,10 +60,26 @@ class Workflow:
                 'alist_mount':b['mount_path'] if b else None,
                 'cookie_source':self.store.setting('cookie_source','third_party'),
                 'cookie_configured':bool(b or pending),'auto_relogin':False,'qr_login_enabled':False,
-                'alist_configured':any(self.alist.credentials()),'alist_managed':self.config.alist_managed,
+                'alist_configured':alist['configured'],'alist_managed':alist['managed'],
                 'connection_error':self.store.setting('connection_error') or None,
                 'connection_error_code':self.store.setting('connection_error_code') or None,
-                'alist_url':self.config.alist_url}
+                'alist_url':alist['url']}
+
+    def configure_alist(self,body):
+        with self.connection_lock:
+            if self.store.one("SELECT 1 FROM transfers WHERE state IN ('SUBMITTING','SUBMIT_UNKNOWN','CLOUD_DOWNLOADING','WAITING_FILES') LIMIT 1"):
+                if body.get('check') is not True:
+                    raise AppError('ACTIVE_TRANSFERS','转存处理中，请完成后修改 Alist 连接',409)
+            if body.get('check') is True:
+                if set(body)!={'check'}:raise AppError('INVALID_ALIST_SETTINGS','Alist 设置无效')
+                return self.alist.status(check=True)
+            result=self.alist.configure(body)
+            if self.store.binding(False):
+                with self.store.transaction() as db:db.execute('UPDATE binding SET ready=0 WHERE id=1')
+            if self.store.binding(False) or self.store.setting('pending_115_cookie'):
+                try:self.bind()
+                except AppError:return {**result,'connection':self.connection_status()}
+            return {**result,'connection':self.connection_status()}
 
     def bind(self,cookie='',*,cookie_source=None,alist_password='',alist_token=''):
         cookie_source=cookie_source or self.store.setting('cookie_source','third_party')
@@ -119,7 +136,7 @@ class Workflow:
         return self.connection_status()
 
     def reconcile_connection(self):
-        if not self.config.alist_managed or not any(self.alist.credentials()):return
+        if not self.alist.status()['managed'] or not any(self.alist.credentials()):return
         now=time.monotonic()
         if now<self.next_connection_check:return
         self.next_connection_check=now+60

@@ -209,7 +209,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
             m=re.fullmatch(r'/api/subscriptions/([a-f0-9]{32})/history',path)
             if m:return self.send_json(self.app.rss.history(self.session(),m[1]))
             if path=='/api/settings/sonarr':
-                self.session(admin=True);return self.send_json(self.app.sonarr.status())
+                self.session(admin=True);return self.send_json(self.app.sonarr.status(check=True))
+            if path=='/api/settings/alist':
+                self.session(admin=True);return self.send_json(self.app.alist.status(check=True))
             if path=='/api/settings/connection':
                 self.session(admin=True);return self.send_json(self.app.workflow.connection_status())
             if path=='/api/settings/metadata':
@@ -276,6 +278,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.send_json(self.app.metadata.configure(data.get('tmdb_credential',''),clear=data.get('clear_tmdb') is True))
             if path=='/api/settings/sonarr':
                 self.session(admin=True);return self.send_json(self.app.sonarr.configure(data))
+            if path=='/api/settings/alist':
+                self.session(admin=True);return self.send_json(self.app.workflow.configure_alist(data))
             if path=='/api/settings/following':
                 self.session(admin=True);return self.send_json(self.app.rss.configure(data))
             if path=='/api/library/actions':

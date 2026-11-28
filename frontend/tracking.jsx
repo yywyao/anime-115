@@ -60,13 +60,6 @@ export function FollowManager({user,embedded=false}){
  </>;
  return embedded?<section>{content}</section>:<main className="page-shell m115-page">{content}</main>;
 }
-export function SonarrSettings(){
- const {useState,useEffect}=R(),[value,setValue]=useState({url:'',api_version:'v3'}),[key,setKey]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
- useEffect(()=>{api('/settings/sonarr').then(setValue).catch(e=>setError(e.message));},[]);
- async function save(e){e.preventDefault();setBusy(true);setError('');try{setValue(await post('/settings/sonarr',{url:value.url,api_version:value.api_version,api_key:key}));setKey('');setMessage('已连接');}catch(e){setError(e.message);}finally{setBusy(false);}}
- async function disconnect(){setBusy(true);setError('');try{const status=await post('/settings/sonarr',{clear:true});setValue(status);setMessage(status.managed?'已恢复托管':'已断开');}catch(e){setError(e.message);}finally{setBusy(false);}}
- return <section className="m115-card"><details><summary>Sonarr {value.managed?'· 托管':value.configured?'· 已连接':''}</summary><form className="m115-form" onSubmit={save}><label>地址<input type="url" value={value.url} onChange={e=>setValue({...value,url:e.target.value})} placeholder="http://sonarr:8989" required/></label><label>API Key<input type="password" autoComplete="off" value={key} onChange={e=>setKey(e.target.value)}/></label><label>API 版本<select value={value.api_version} onChange={e=>setValue({...value,api_version:e.target.value})}><option value="v3">Sonarr 3 / 4</option><option value="v5">Sonarr 5</option></select></label><div className="m115-actions"><button className="primary-button" disabled={busy}>{value.managed?'连接外部 Sonarr':'连接'}</button>{value.configured&&!value.managed&&<button type="button" className="secondary-button" disabled={busy} onClick={disconnect}>断开</button>}</div></form>{error&&<Notice error={error}/>} {message&&<Notice>{message}</Notice>}</details></section>;
-}
 export function RenameButton({task,onUpdate}){
  const {useState}=R(),[open,setOpen]=useState(false),[plan,setPlan]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[season,setSeason]=useState('');
  const override=()=>season===''?{}:{season:Number(season)};

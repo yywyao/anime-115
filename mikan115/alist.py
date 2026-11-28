@@ -24,21 +24,85 @@ class Alist:
         if p.scheme not in {'https','http'} or not p.netloc or p.username or p.password or p.query or p.fragment:
             raise AppError('INVALID_ALIST_URL','Alist 地址配置不正确',503)
 
-    def credentials(self):
-        token=self.config.alist_token
-        password=self.config.alist_password
+    def configuration(self):
+        override=self.store.setting('alist_connection')
+        if override:
+            data=json.loads(self.store.decrypt(override))
+            if data.get('mode')=='custom':return data
+        data={'mode':'automatic','url':self.config.alist_url,'username':self.config.alist_username,
+              'token':self.config.alist_token,'password':self.config.alist_password}
         stored=self.store.setting('alist_credentials')
-        if stored:
-            data=json.loads(self.store.decrypt(stored));token=data.get('token') or token;password=data.get('password') or password
-        return token,password
+        if stored and not override:
+            legacy=json.loads(self.store.decrypt(stored))
+            data.update(token=legacy.get('token') or data['token'],password=legacy.get('password') or data['password'])
+        return data
+
+    @property
+    def base_url(self):return self.configuration()['url']
+
+    def credentials(self):
+        data=self.configuration()
+        return data.get('token',''),data.get('password','')
+
+    def status(self,*,check=False):
+        config=self.configuration()
+        result={'configured':bool(config.get('token') or config.get('password')),
+                'managed':config['mode']=='automatic' and bool(getattr(self.config,'alist_managed',False)),
+                'mode':config['mode'],'url':config['url'],'username':config['username']}
+        if check:
+            try:self.preflight()
+            except AppError as error:result.update(ready=False,error=error.message,code=error.code)
+            else:result.update(ready=True,error=None,code=None)
+        return result
+
+    def configure(self,body):
+        if not isinstance(body,dict) or set(body)-{'mode','url','username','token','password'}:
+            raise AppError('INVALID_ALIST_SETTINGS','Alist 设置无效')
+        mode=body.get('mode','custom')
+        if mode not in {'automatic','custom'}:raise AppError('INVALID_ALIST_SETTINGS','请选择连接方式')
+        if mode=='automatic':
+            candidate={'mode':'automatic'}
+        else:
+            url=body.get('url','')
+            if not isinstance(url,str):raise AppError('INVALID_ALIST_URL','Alist 地址格式不正确')
+            url=url.strip().rstrip('/')
+            try:p=urllib.parse.urlsplit(url);p.port
+            except ValueError:raise AppError('INVALID_ALIST_URL','Alist 地址格式不正确')
+            if (p.scheme not in {'http','https'} or not p.hostname or p.username or p.password or p.query or p.fragment
+                or '..' in urllib.parse.unquote(p.path).split('/') or len(url)>2048 or any(ord(c)<33 for c in url)):
+                raise AppError('INVALID_ALIST_URL','Alist 地址格式不正确')
+            username=body.get('username','admin')
+            token=body.get('token','');password=body.get('password','')
+            if (not isinstance(username,str) or not username.strip() or len(username)>100
+                or any(ord(c)<32 for c in username)
+                or any(not isinstance(v,str) or len(v)>8192 or any(ord(c)<32 for c in v) for v in (token,password))):
+                raise AppError('INVALID_ALIST_SETTINGS','Alist 管理凭据格式不正确')
+            old=self.configuration()
+            if not token and not password and old['url']==url and old['username']==username:
+                token=old.get('token','');password=old.get('password','')
+            if not token and not password:raise AppError('ALIST_CREDENTIALS_REQUIRED','请填写管理令牌或管理员密码',409)
+            candidate={'mode':'custom','url':url,'username':username,'token':token,'password':password}
+        previous=self.store.setting('alist_connection')
+        with self._lock:
+            self.store.set_setting('alist_connection',self.store.encrypt(json.dumps(candidate)))
+            self._token=''
+            try:self.preflight()
+            except AppError:
+                if previous:self.store.set_setting('alist_connection',previous)
+                else:
+                    with self.store.transaction() as db:db.execute("DELETE FROM settings WHERE key='alist_connection'")
+                self._token=''
+                raise
+        return self.status(check=True)
 
     def _auth(self):
         with self._lock:
             if self._token:return self._token
             token,password=self.credentials()
             if token:self._token=token;return token
-            if not password:raise AppError('ALIST_CREDENTIALS_REQUIRED','请在部署配置或连接设置中填写 Alist 管理凭据',409)
-            data=self.http.json('POST',self.config.alist_url+'/api/auth/login',body={'username':self.config.alist_username,'password':password})
+            if not password:raise AppError('ALIST_CREDENTIALS_REQUIRED','Alist 自动配置未就绪，请重试或使用自定义连接',409)
+            data=self.http.json('POST',self.base_url+'/api/auth/login',body={'username':self.configuration()['username'],'password':password},
+                                headers={'Client-Id':self.store.instance_id})
             token=(data.get('data') or {}).get('token')
             if data.get('code')!=200 or not token:raise ProviderError('ALIST_AUTH_FAILED','Alist 管理认证失败，请检查管理凭据')
             self._token=token;return token
@@ -48,7 +112,10 @@ class Alist:
         with self._lock:self._token=''
 
     def call(self,method,path,body=None,*,retry=True):
-        data=self.http.json(method,self.config.alist_url+path,body=body,headers={'Authorization':self._auth()})
+        with self._lock:return self._call(method,path,body,retry=retry)
+
+    def _call(self,method,path,body=None,*,retry=True):
+        data=self.http.json(method,self.base_url+path,body=body,headers={'Authorization':self._auth(),'Client-Id':self.store.instance_id})
         if data.get('code')==401 and retry:
             with self._lock:self._token=''
             return self.call(method,path,body,retry=False)
@@ -236,7 +303,7 @@ class Alist:
         if data.get('is_dir'):raise AppError('NOT_A_FILE','不能直接下载目录',400)
         sign=str(data.get('sign') or '')
         query='?'+urllib.parse.urlencode({'sign':sign}) if sign else ''
-        url=self.config.alist_url+'/p/'+urllib.parse.quote(path.lstrip('/'),safe='/')+query
+        url=self.base_url+'/p/'+urllib.parse.quote(path.lstrip('/'),safe='/')+query
         headers={'Authorization':self._auth(),'User-Agent':'Mozilla/5.0 Mikan115/0.1'}
         if range_header:headers['Range']=range_header
         return self.http.open('GET',url,headers=headers)

@@ -17,8 +17,8 @@ for f in sorted(root.rglob('*')):
     if rel.as_posix()!='seed/catalog.sqlite' and (f.suffix.lower() in private_suffixes
            or any(marker in f.name.lower() for marker in ('.sqlite-','.sqlite3-','.db-'))):continue
     files.append(f)
-required=['AGENTS.md','README.md','docs/usage.md','.env.example','run.py','mikan115/server.py','mikan115/metadata.py',
-          'mikan115/library.py','mikan115/batch.py','mikan115/mikan_parser.py','frontend/components.jsx',
+required=['AGENTS.md','README.md','docs/usage.md','.env.example','run.py','tools/start.py','mikan115/server.py','mikan115/metadata.py',
+          'mikan115/library.py','mikan115/batch.py','mikan115/mikan_parser.py','frontend/components.jsx','frontend/service-settings.jsx',
           'frontend/review.css','templates/index.html','static/mikan115-ui.js','static/assets/mikan115-app.js',
           'seed/catalog.sqlite','compose.yaml','requirements.txt']
 for path in required:

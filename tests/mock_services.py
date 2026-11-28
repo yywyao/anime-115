@@ -76,6 +76,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             body=json.loads(raw) if self.headers.get_content_type()=='application/json' else {k:v[0] for k,v in urllib.parse.parse_qs(raw.decode()).items()}
         with self.state.lock:
             self.state.calls.append((method,path,q,body))
+            if path=='/api/v3/system/status':
+                if self.headers.get('X-Api-Key')!='artificial-sonarr-api-key-123456':
+                    return self.result({'error':'unauthorized'},401)
+                return self.result({'appName':'Sonarr','version':'4.0.20.3014'})
             if path.startswith('/api/') and path!='/api/auth/login':
                 if self.headers.get('Authorization')!='artificial-alist-token':return self.result({'code':401,'message':'unauthorized'})
             if path=='/api/auth/login':

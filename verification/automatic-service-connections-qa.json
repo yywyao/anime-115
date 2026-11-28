@@ -1,0 +1,45 @@
+{
+  "verified_utc": "2026-11-28T03:05:16.665102+00:00",
+  "windows_backend_tests": 173,
+  "browser": {
+    "success": true,
+    "scope": "Isolated local AList and Sonarr HTTP fixtures.",
+    "results": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "automatic_services": true,
+        "custom_settings": true,
+        "restore_automatic": true,
+        "secrets_absent_from_api_responses": true,
+        "page_errors": 0
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "automatic_services": true,
+        "custom_settings": true,
+        "restore_automatic": true,
+        "secrets_absent_from_api_responses": true,
+        "page_errors": 0
+      }
+    ]
+  },
+  "local_service_validation": {
+    "success": true,
+    "automatic_alist": true,
+    "automatic_sonarr": true,
+    "single_ck_mount": true,
+    "local_loopback_only": true,
+    "credentials_absent_from_api": true,
+    "real_cloud_tasks_created": false
+  },
+  "versions": {
+    "alist": "3.66.0",
+    "sonarr": "4.0.20.3014"
+  }
+}

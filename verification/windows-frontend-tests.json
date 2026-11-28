@@ -1,5 +1,5 @@
 {
-  "verified_utc": "2026-11-27T15:39:05.290Z",
+  "verified_utc": "2026-11-28T03:05:16.960Z",
   "node": "v24.22.3",
   "platform": "win32",
   "success": true,
@@ -8,10 +8,11 @@
   "file_hashes": {
     "frontend/api.js": "99192bafef37c1499968301982c414a782c1fe9125588d9be2d11cda72607aa9",
     "frontend/api.test.mjs": "3b4a353178366888ae9d5df6d3d9f3bf17b0777cfbcea643fbc083533e7b9da8",
-    "frontend/components.jsx": "4178599c8d5bae8203cd4fe68956c9c958d506620b020eb497a46c944cfd1598",
-    "frontend/tracking.jsx": "94c6a8f35a23cdf87aae9b79b009ff5df6fc34de5143b96afa5609d50eb4fa60",
+    "frontend/components.jsx": "50aa9a8c20d2f2d677eae6011c917855ed0c44d670a87122d5470c3c1e53e257",
+    "frontend/service-settings.jsx": "d8fac4612e8c9a979fb8ee66a79393d5f37202810790ae4fe71a457c89c6f2c7",
+    "frontend/tracking.jsx": "e4d46cf3ee688a2b648bf3ea7d86e2db76a953a44d49f2ab48951035cd922b05",
     "frontend/review.css": "dd524deb8de3ffbe1223a83f2561c1cedc33899a326fc367a89fb93ea5a4a8ad",
     "frontend/shell.js": "d69a1d7c97f29395b49386e34f431def1930f29896b96fcdb1451b4d450e03ee",
-    "static/mikan115-ui.js": "5293d310c23278e9f1b8ec2421ec333dc3310eaa4f384dc65200274b491b6368"
+    "static/mikan115-ui.js": "8fa2541f29c0b5ef6f0f50880e7b90b42796f078c23f84cece8305e7e16bd162"
   }
 }
