@@ -1,0 +1,148 @@
+{
+  "verified_utc": "2026-11-28T04:58:56.307461+00:00",
+  "success": true,
+  "windows_backend": {
+    "tests_run": 196,
+    "success": true
+  },
+  "frontend": {
+    "tests_run": 10,
+    "success": true
+  },
+  "linux": {
+    "tests_run": 32,
+    "success": true,
+    "network": "Disabled in an isolated container",
+    "compose_configuration_checked": true
+  },
+  "browser_resource_and_vps": {
+    "success": true,
+    "scope": "Local HTTP fixtures with simulated Mikan RSS and cloud transfers.",
+    "results": [
+      {
+        "device": "desktop",
+        "resource_download_button": true,
+        "filtered_bulk_download": true,
+        "series_output": true,
+        "automatic_rename": true,
+        "independent_vps_job": true,
+        "portal": true,
+        "narrow_layout": true,
+        "console_errors": 0
+      },
+      {
+        "device": "mobile",
+        "resource_download_button": true,
+        "filtered_bulk_download": true,
+        "series_output": true,
+        "automatic_rename": true,
+        "independent_vps_job": true,
+        "portal": true,
+        "narrow_layout": true,
+        "console_errors": 0
+      }
+    ]
+  },
+  "browser_group_filters_and_rss": {
+    "success": true,
+    "scope": "Local HTTP fixtures with simulated Mikan RSS and cloud transfers.",
+    "results": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "combined_filters": true,
+        "group_select_all": true,
+        "hidden_selections_removed": true,
+        "library_selection_scope": true,
+        "group_specific_rss": true,
+        "automatic_future_release": true,
+        "other_groups_excluded": true,
+        "automatic_rss_import_preview": true,
+        "focus_restored": true,
+        "scheduler": "Initial due time advanced in an isolated fixture.",
+        "page_errors": 0
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "combined_filters": true,
+        "group_select_all": true,
+        "hidden_selections_removed": true,
+        "library_selection_scope": true,
+        "group_specific_rss": true,
+        "automatic_future_release": true,
+        "other_groups_excluded": true,
+        "automatic_rss_import_preview": true,
+        "focus_restored": true,
+        "scheduler": "Initial due time advanced in an isolated fixture.",
+        "page_errors": 0
+      }
+    ]
+  },
+  "live_detail_art_and_rating_layout": {
+    "success": true,
+    "real_cloud_tasks_created": 0,
+    "results": [
+      {
+        "device": "desktop",
+        "correct_season_six_logo": true,
+        "wrong_season_logo_absent": true,
+        "provider_logos_loaded": 3,
+        "plain_provider_text_absent": true,
+        "matched_logo_number_height": 15,
+        "intra_rating_gap": 4,
+        "inter_rating_gap": 16,
+        "horizontal_overflow": false,
+        "console_errors": 0
+      },
+      {
+        "device": "mobile",
+        "correct_season_six_logo": true,
+        "wrong_season_logo_absent": true,
+        "provider_logos_loaded": 3,
+        "plain_provider_text_absent": true,
+        "matched_logo_number_height": 15,
+        "intra_rating_gap": 4,
+        "inter_rating_gap": 16,
+        "horizontal_overflow": false,
+        "console_errors": 0
+      }
+    ]
+  },
+  "real_existing_file_verification": {
+    "success": true,
+    "root": "mikan",
+    "local_services_ready": true,
+    "existing_tasks": [
+      {
+        "organization": "PUBLISHED",
+        "empty_stage_removed": true,
+        "episode_named": true,
+        "range_download_ok": true,
+        "download_error": null
+      }
+    ],
+    "new_cloud_tasks_created": 0,
+    "full_real_file_download": false
+  },
+  "reviewed_multi_season_logo_series": 268,
+  "boundaries": {
+    "cloud_jobs_for_tests": "Local protocol fixtures only",
+    "real_new_cloud_jobs_created": 0,
+    "real_file_validation": "Existing file ID, directory, size and 32-byte HTTP range through AList; no full real-file download"
+  },
+  "file_hashes": {
+    "mikan115/cloud_layout.py": "e7f518159e4607235f43c5efe8fa640dc68e01e2b603cb37e6d79fb2f4ec016f",
+    "mikan115/library.py": "b3eab653489dc5f12f2cffddfae5f066c69d7701761c5e670394020f9db8d48d",
+    "mikan115/organizer.py": "2b4bfb71fdebe420d6463dc8258d2a92c5618e5b4d1c784cab4ebe7991fe1a1b",
+    "mikan115/catalog.py": "5276c72bfdae34ddebe59be2b7a958d6a849994d679d19d95df3a003f87625fa",
+    "mikan115/metadata.py": "b215d78e9168c5dcf3cc969c8f74b70ed9d5cb64b3fe5dfc963ba1ea3e088c24",
+    "frontend/resources.jsx": "7c073cdef991d192dd2b80b0633fb964110f243565201de7919a59734670685f",
+    "frontend/review.css": "6a24621d9d363df8430fef5b196b336c2b44dba664a7ae0684f5414dbb444c23",
+    "seed/tmdb-logo-scopes.json": "bda145bf271a31bdb9abbaad84a81bb59c4fa40a470daefc60583e226e5bd593"
+  }
+}

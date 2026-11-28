@@ -4,7 +4,7 @@ import unicodedata
 from .errors import AppError
 
 VERSIONS={'chs':'简中','cht':'繁中','chs-ja':'简日','cht-ja':'繁日','chs-cht':'简繁','chs-cht-ja':'简繁日','zh-ja':'中日','ja':'日文','none':'无字幕','unknown':'未标注'}
-DEFAULT_RULES={'group_ids':[],'versions':[],'resolutions':[],'include':[],'exclude':[],'dedupe':'episode','wait_minutes':0,'allow_batches':False,'min_episode':None,'max_episode':None,'rename':False,'season':None,'episode_offset':0,'episode_title':False,'download_to_vps':False}
+DEFAULT_RULES={'group_ids':[],'versions':[],'resolutions':[],'include':[],'exclude':[],'dedupe':'episode','wait_minutes':0,'allow_batches':False,'min_episode':None,'max_episode':None,'rename':True,'season':None,'episode_offset':0,'episode_title':False,'download_to_vps':False}
 
 def parse(title,group_id='',group_name=''):
     title=unicodedata.normalize('NFKC',str(title or ''))[:500].replace('–','-').replace('—','-');lower=title.casefold()

@@ -111,14 +111,14 @@ export function ResourceModal({work,close}){
     finally{setBusy('');}
   }
 
-  async function transfer(ids){
+  async function transfer(ids,destination='cloud'){
     if(!ids.length)return;
-    setBusy('transfer');setError('');setMessage('');
+    setBusy(destination);setError('');setMessage('');
     try{
-      const result=await post('/transfers',{mikan_id:bid,release_ids:ids,rules:filters});
+      const result=await post(destination==='vps'?'/library/resources':'/transfers',{mikan_id:bid,release_ids:ids,rules:filters});
       setSelected(previous=>new Set([...previous].filter(id=>!ids.includes(id))));
       setPlan(null);
-      setMessage('已提交 '+(result.tasks?.length||0)+' 项');
+      setMessage((destination==='vps'?'已加入 VPS 下载队列 ':'已提交转存 ')+(result.tasks?.length||0)+' 项');
     }catch(exception){failed(exception);}
     finally{setBusy('');}
   }
@@ -181,7 +181,10 @@ export function ResourceModal({work,close}){
       {busy==='confirm'?'排队中…':'确认入库'}
     </button>}
     {chosen.length>0&&<button className="primary-button" disabled={!!busy} onClick={()=>transfer(chosen)}>
-      {busy==='transfer'?'提交中…':'批量转存（'+chosen.length+'）'}
+      {busy==='cloud'?'提交中…':'转存至 115（'+chosen.length+'）'}
+    </button>}
+    {chosen.length>0&&<button className="secondary-button" disabled={!!busy} onClick={()=>transfer(chosen,'vps')}>
+      {busy==='vps'?'提交中…':'下载到 VPS（'+chosen.length+'）'}
     </button>}
     <button className="secondary-button" onClick={()=>go('/requests')}>任务</button>
   </>}>
@@ -264,7 +267,10 @@ export function ResourceModal({work,close}){
             <div><strong>{resource.title}</strong><ReleaseInfo release={resource.release}/>
               <small>{[resource.size,resource.pubDate].filter(Boolean).join(' · ')}</small>
             </div>
-            <button className="primary-button" disabled={!!busy||!id} onClick={()=>transfer([id])}>转存</button>
+            <div className="m115-resource-destinations">
+              <button className="primary-button" disabled={!!busy||!id} onClick={()=>transfer([id])}>转存至 115</button>
+              <button className="secondary-button" disabled={!!busy||!id} onClick={()=>transfer([id],'vps')}>下载到 VPS</button>
+            </div>
           </article>;
         })}
         {group.resources.length>3&&<button type="button" className="secondary-button m115-resource-expand"

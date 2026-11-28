@@ -18,10 +18,11 @@ for f in sorted(root.rglob('*')):
            or any(marker in f.name.lower() for marker in ('.sqlite-','.sqlite3-','.db-'))):continue
     files.append(f)
 required=['AGENTS.md','README.md','docs/usage.md','.env.example','run.py','tools/start.py','mikan115/server.py','mikan115/metadata.py',
-          'mikan115/library.py','mikan115/batch.py','mikan115/mikan_parser.py','frontend/components.jsx','frontend/service-settings.jsx',
+          'mikan115/library.py','mikan115/batch.py','mikan115/cloud_layout.py','mikan115/mikan_parser.py','frontend/components.jsx','frontend/service-settings.jsx',
           'frontend/resources.jsx','frontend/release-selection.js',
           'frontend/review.css','templates/index.html','static/mikan115-ui.js','static/assets/mikan115-app.js',
-          'seed/catalog.sqlite','compose.yaml','requirements.txt']
+          'seed/catalog.sqlite','seed/tmdb-logo-scopes.json','static/provider-logos/tmdb-official.svg',
+          'static/provider-logos/bangumi-official.png','static/provider-logos/mal-official.svg','compose.yaml','requirements.txt']
 for path in required:
     if not (root/path).is_file():raise SystemExit('Required portable file missing: '+path)
 manifest={'version':1,'created_at':time.time(),'real_115_login_performed':False,

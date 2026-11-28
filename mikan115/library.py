@@ -11,6 +11,7 @@ import re
 import secrets
 import time
 import datetime
+import unicodedata
 
 from .errors import AppError
 from . import releases
@@ -29,6 +30,10 @@ CREATE TABLE IF NOT EXISTS library_items (
  target_path TEXT NOT NULL, status TEXT NOT NULL, error TEXT NOT NULL DEFAULT '',
  UNIQUE(library_task_id,file_id));
 CREATE INDEX IF NOT EXISTS library_tasks_transfer ON library_tasks(transfer_id);
+CREATE TABLE IF NOT EXISTS library_requests (
+ transfer_id TEXT NOT NULL REFERENCES transfers(id), user_id INTEGER NOT NULL REFERENCES users(id),
+ status TEXT NOT NULL DEFAULT 'WAITING', error TEXT, next_retry REAL NOT NULL DEFAULT 0,
+ PRIMARY KEY(transfer_id,user_id));
 '''
 
 
@@ -93,6 +98,27 @@ class Library:
             raise AppError('UNSAFE_LIBRARY_NAME','文件名不安全，未写入本地目录',409)
         return path
 
+    def _destination(self,tid,task_id):
+        layout=getattr(self.workflow,'layout',None)
+        series=layout.row(tid) if layout else None
+        if series and series['status']=='PUBLISHED':
+            name=str(series['series_name'])
+            if self._safe_name(name).parts!=(name,):raise AppError('UNSAFE_LIBRARY_PATH','系列目录无效',409)
+            target=(self.root/'mikan'/name).resolve()
+        else:target=(self.root/'mikan'/'未分类'/task_id).resolve()
+        if not target.is_relative_to(self.root):raise AppError('UNSAFE_LIBRARY_PATH','入库目录不安全',503)
+        return target
+
+    @staticmethod
+    def _reserve_targets(db,items):
+        """A shared series directory cannot adopt another task's equal-size file."""
+        existing={unicodedata.normalize('NFKC',str(Path(r['target_path']).resolve())).casefold()
+                  for r in db.execute('SELECT target_path FROM library_items')}
+        for item in items:
+            target=Path(item[5]);key=unicodedata.normalize('NFKC',str(target.resolve())).casefold()
+            if key in existing or target.exists():raise AppError('LIBRARY_FILE_CONFLICT','系列中已有同名文件，未覆盖，请核对文件名',409)
+            existing.add(key)
+
     def _task_row(self,library_id):
         return self.store.one('SELECT * FROM library_tasks WHERE id=?',(library_id,))
 
@@ -148,6 +174,7 @@ class Library:
             already={str(item['file_id']) for item in db.execute('SELECT file_id FROM library_items WHERE library_task_id=?',(row['id'],)).fetchall()}
             items=[item for item in items if str(item[2]) not in already]
             if items:
+                self._reserve_targets(db,items)
                 db.executemany('INSERT INTO library_items VALUES(?,?,?,?,?,?,?,?)',items)
                 status='QUEUED' if current['status'] in {'COMPLETE','FAILED'} else current['status']
                 missing=sorted(set(json.loads(current['aired_episodes'] or '[]'))-episodes)
@@ -162,6 +189,8 @@ class Library:
             raise AppError('LIBRARY_REQUEST_INVALID','预期集数、目录和文件名由目录与资源决定',400)
         owner=self._user_id(user)
         source=self.workflow.get(user,tid)
+        layout=getattr(self.workflow,'layout',None)
+        if layout and not layout.ready(tid):raise AppError('FILES_ORGANIZING','文件整理完成后将开始下载',409)
         work_id=str(source.get('work_id') or '')
         naming_row=self.store.one('SELECT metadata FROM transfer_naming WHERE transfer_id=?',(str(tid),))
         naming={}
@@ -196,7 +225,7 @@ class Library:
         existing=self.store.one('SELECT * FROM library_tasks WHERE transfer_id=? ORDER BY created_at DESC LIMIT 1',(str(tid),))
         if existing:return self._extend_existing(user,existing,source_files,ids,owner,following)
         season,expected,aired=self._catalog_episodes(mikan_id)
-        task_id=secrets.token_hex(16);now=time.time();root=(self.root/task_id).resolve()
+        task_id=secrets.token_hex(16);now=time.time();root=self._destination(tid,task_id)
         if not root.is_relative_to(self.root):raise AppError('UNSAFE_LIBRARY_PATH','入库目录不安全',503)
         metadata={'mikan_id':mikan_id,'title':str(source.get('title') or ''),'season':season,
                   'transfer_id':str(tid),'release_hash':str(naming.get('resource_hash') or source.get('infohash') or ''),
@@ -214,16 +243,59 @@ class Library:
         missing=sorted(set(aired)-set(episodes))
         with self.store.transaction() as db:
             if not self._following_valid(db,owner,following):return None
-            db.execute('INSERT INTO library_tasks (id,transfer_id,owner_user_id,status,root_path,metadata,expected_episodes,aired_episodes,episodes,missing_episodes,error,lease_until,lease_owner,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                       (task_id,str(tid),owner,'QUEUED',str(root),json.dumps(metadata,ensure_ascii=False),json.dumps(expected),json.dumps(aired),json.dumps(episodes),json.dumps(missing),'',0,None,now,now))
-            db.executemany('INSERT INTO library_items VALUES(?,?,?,?,?,?,?,?)',[(x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7]) for x in items])
+            # Manual requests and RSS dispatch have separate workers. Recheck
+            # under the write lock so both cannot create a job for one transfer.
+            concurrent=db.execute('SELECT * FROM library_tasks WHERE transfer_id=? ORDER BY created_at DESC LIMIT 1',(str(tid),)).fetchone()
+            concurrent=dict(concurrent) if concurrent else None
+            if not concurrent:
+                self._reserve_targets(db,items)
+                db.execute('INSERT INTO library_tasks (id,transfer_id,owner_user_id,status,root_path,metadata,expected_episodes,aired_episodes,episodes,missing_episodes,error,lease_until,lease_owner,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                           (task_id,str(tid),owner,'QUEUED',str(root),json.dumps(metadata,ensure_ascii=False),json.dumps(expected),json.dumps(aired),json.dumps(episodes),json.dumps(missing),'',0,None,now,now))
+                db.executemany('INSERT INTO library_items VALUES(?,?,?,?,?,?,?,?)',[(x[0],x[1],x[2],x[3],x[4],x[5],x[6],x[7]) for x in items])
+        if concurrent:return self._extend_existing(user,concurrent,source_files,ids,owner,following)
         return self.task(user,task_id)
+
+    def request(self,user,tid,data=None):
+        """Durable, explicit VPS intent; a cloud-only action never creates one."""
+        data=data or {}
+        source=self.workflow.get(user,tid)
+        if data:
+            if source['state']!='FILES_READY':raise AppError('FILES_NOT_READY','转存完成后可选择文件',409)
+            return self.enqueue(user,tid,data)
+        with self.store.transaction() as db:
+            db.execute("INSERT INTO library_requests(transfer_id,user_id) VALUES(?,?) ON CONFLICT(transfer_id,user_id) DO UPDATE SET status='WAITING',error=NULL,next_retry=0",(tid,self._user_id(user)))
+        self.enqueue_requests(tid)
+        return self.task(user,tid)
+
+    def enqueue_requests(self,tid=None):
+        rows=self.store.all('''SELECT r.*,u.is_admin,t.state FROM library_requests r JOIN users u ON u.id=r.user_id
+            JOIN transfers t ON t.id=r.transfer_id WHERE r.status='WAITING' AND r.next_retry<=? AND u.disabled=0'''+
+            (' AND r.transfer_id=?' if tid else '')+' LIMIT 10',(time.time(),tid) if tid else (time.time(),))
+        for row in rows:
+            if row['state']!='FILES_READY':continue
+            layout=getattr(self.workflow,'layout',None)
+            if layout and not layout.ready(row['transfer_id']):continue
+            naming=self.store.one('SELECT * FROM transfer_naming WHERE transfer_id=?',(row['transfer_id'],))
+            if naming and naming['auto_rename'] and naming['status']!='DONE':continue
+            with self.workflow.connection_lock:
+                try:self.enqueue({'id':row['user_id'],'is_admin':row['is_admin']},row['transfer_id'])
+                except AppError as error:
+                    with self.store.transaction() as db:db.execute('UPDATE library_requests SET error=?,next_retry=? WHERE transfer_id=? AND user_id=?',(error.message,time.time()+60,row['transfer_id'],row['user_id']))
+                else:
+                    with self.store.transaction() as db:db.execute("UPDATE library_requests SET status='SUBMITTED',error=NULL WHERE transfer_id=? AND user_id=?",(row['transfer_id'],row['user_id']))
 
     def _catalog_episodes(self,mikan_id):
         """Use only an exact catalog work; no highest-number inference."""
         if not mikan_id or self.catalog is None:return None,[],[]
         try:work=self.catalog.work(mikan_id) or {}
         except Exception:return None,[],[]
+        scope=self.catalog.tmdb_scope(work) if hasattr(self.catalog,'tmdb_scope') else None
+        if scope and scope[0]=='tv' and scope[3] is not None:
+            # An episode-level identity link does not mean the series has one
+            # episode. Reuse the exact season verified by the naming pipeline.
+            season_data=self.store.cache_get(f'cloud-naming-season:{scope[1]}:{scope[2]}',stale=True)
+            if not season_data or str(season_data.get('tmdb_id'))!=str(scope[1]) or season_data.get('defaultSeason')!=scope[2]:return scope[2],[],[]
+            work={**work,'episodes':season_data.get('episodes') or []}
         episodes=work.get('episodes') or []
         seasons=sorted({int(e.get('season_number')) for e in episodes if str(e.get('season_number','')).isdigit()})
         season=seasons[0] if len(seasons)==1 else None
@@ -312,6 +384,7 @@ class Library:
         return self._process(row)
 
     def tick(self,limit=1):
+        self.enqueue_requests()
         results=[]
         for _ in range(max(0,int(limit))):
             row=self._claim()
@@ -325,7 +398,15 @@ class Library:
             row=self.store.one('SELECT * FROM library_tasks WHERE transfer_id=? ORDER BY created_at DESC LIMIT 1',(tid,))
         if not row:
             source=self.workflow.get(user,tid)
-            ready=source.get('state')=='FILES_READY' and bool(source.get('files'))
+            request=self.store.one("SELECT * FROM library_requests WHERE transfer_id=? AND user_id=? AND status='WAITING'",(tid,self._user_id(user)))
+            if request:
+                if source['state'] in {'FAILED','AUTH_REQUIRED','CANCELED'}:status='waiting_cloud'
+                elif source['state']=='FILES_READY':status='waiting_organize'
+                else:status='waiting_cloud'
+                return {'available':False,'state':status,'status':status,'transfer_id':tid,'task_id':None,
+                        'error':request['error'] or source.get('error_message') or (source.get('naming') or {}).get('error'),'files':[]}
+            layout=getattr(self.workflow,'layout',None)
+            ready=source.get('state')=='FILES_READY' and bool(source.get('files')) and (not layout or layout.ready(tid))
             return {'available':ready,'state':'IDLE','status':'idle','transfer_id':str(tid),'task_id':None,
                     'episodes':[],'missing_episodes':[],'expected_episodes':[],'episode_count':0,'task_ids':[],'release_hashes':[]}
         if user is not None:self._authorize(user,row)

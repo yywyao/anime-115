@@ -70,7 +70,7 @@ class Pan115:
         raise ProviderError('PAN115_PAGINATION','115 目录条目过多，无法确认完整列表')
 
     def create_folder(self,parent_cid,name):
-        if not re.fullmatch(r'[A-Za-z0-9_\-]{3,100}',name):raise AppError('INVALID_FOLDER_NAME','目录名称不正确')
+        if not isinstance(name,str) or not name or len(name)>180 or name in {'.','..'} or any(ord(c)<32 or c in '/\\<>:"|?*' for c in name):raise AppError('INVALID_FOLDER_NAME','目录名称不正确')
         data=self._call('POST',self.web_base+'/files/add',form={'pid':str(parent_cid),'cname':name})
         cid=str(data.get('cid') or (data.get('data') or {}).get('cid') or '')
         if not cid.isdigit() or cid=='0' or cid==str(parent_cid):
@@ -124,3 +124,12 @@ class Pan115:
         if not str(fid).isdigit() or not name or name in {'.','..'} or len(name)>240 or any(c in name for c in ('/','\\','\0','\r','\n')):raise AppError('INVALID_FILE_NAME','文件名无效')
         # Same endpoint/form used by the pinned 115 driver; callers prove scope first.
         self._call('POST',self.web_base+'/files/batch_rename',form={'fid':str(fid),'file_name':name,'files_new_name['+str(fid)+']':name})
+
+    def move_file(self,fid,parent_cid):
+        if not str(fid).isdigit() or not str(parent_cid).isdigit() or str(parent_cid)=='0':raise AppError('UNSAFE_PATH','文件目录无效',403)
+        self._call('POST',self.web_base+'/files/move',form={'pid':str(parent_cid),'fid[0]':str(fid)})
+
+    def remove_empty_folder(self,parent_cid,cid,name):
+        self.verify_child(parent_cid,cid,name)
+        if self.list_files(cid):raise AppError('FOLDER_NOT_EMPTY','临时目录仍有文件，已保留',409)
+        self._call('POST',self.web_base+'/rb/delete',form={'fid[0]':str(cid)})

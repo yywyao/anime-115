@@ -62,7 +62,9 @@ class ArtworkCatalog(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name);(self.root/'seed').mkdir()
         self.store=Store(self.root/'state');self.catalog=Catalog(self.store,Config(root=self.root,data=self.root/'state'))
         self.base={'id':'second','tmdb_id':77,'media_type':'series','defaultSeason':2,'title':'第二季','ratings':{'mal':8.2},
+                   'tmdb_season':2,'tmdb_mapping':{'status':'linked','type':'tv','id':77,'season':2},
                    'poster_url':'https://mikanani.me/second.jpg','backdrop_url':'https://image.tmdb.org/t/p/original/current.jpg'}
+        (self.root/'seed'/'tmdb-logo-scopes.json').write_text(json.dumps({'series':{'tv:77':{'generic':['https://image.tmdb.org/t/p/original/correct.png'],'seasons':{}}}}),encoding='utf-8')
         with contextlib.closing(sqlite3.connect(self.catalog.seed)) as db:
             db.execute('CREATE TABLE works(id TEXT PRIMARY KEY,payload TEXT)')
             db.execute('CREATE TABLE provider_metadata(provider TEXT,external_id TEXT,payload TEXT)')
@@ -85,6 +87,7 @@ class ArtworkCatalog(unittest.TestCase):
             self.assertEqual(result['detail_artwork']['logos'],[]);self.assertEqual(result['detail_artwork']['backdrops'],[])
 
     def test_refresh_is_nonblocking_coalesced_and_retains_stale_art_on_failure(self):
+        self.catalog._logo_scopes={'tv:77':{'generic':['https://image.tmdb.org/t/p/original/old.png']}}
         key='tmdb:artwork:v1:tv:77';old={'backdrops':['https://image.tmdb.org/t/p/w1280/old.jpg'],'logos':['https://image.tmdb.org/t/p/original/old.png'],'logo_language':'ja'}
         self.store.cache_set(key,old,-1);self.store.set_setting('tmdb_credentials',self.store.encrypt('synthetic'))
         entered=threading.Event();release=threading.Event();calls=[]
@@ -101,11 +104,47 @@ class ArtworkCatalog(unittest.TestCase):
         finally:release.set()
 
     def test_refreshed_gallery_overrides_legacy_art_without_replacing_season_or_ratings(self):
+        self.catalog._logo_scopes={'tv:77':{'seasons':{'2':['https://image.tmdb.org/t/p/original/new.png']}}}
         gallery={'backdrops':['https://image.tmdb.org/t/p/w1280/new.jpg'],'logos':['https://image.tmdb.org/t/p/original/new.png'],'logo_language':'ja'}
         self.store.cache_set('tmdb:artwork:v1:tv:77',gallery,60)
         result=self.catalog.detail_artwork(self.base)
         self.assertEqual(result['detail_artwork']['backdrops'],gallery['backdrops'])
         self.assertEqual(result['defaultSeason'],2);self.assertEqual(result['ratings'],self.base['ratings'])
+
+    def test_season_specific_logo_cannot_be_used_by_another_season_or_after_refresh(self):
+        self.catalog._logo_scopes={'tv:77':{'generic':['/generic.png'],'seasons':{'1':['/first.png'],'2':['/second.png']}}}
+        self.store.cache_set('tmdb:artwork:v1:tv:77',{'logos':['https://image.tmdb.org/t/p/original/first.png'],'logo_language':'ja'},60)
+        first=self.catalog.detail_artwork({**self.base,'tmdb_season':1,'tmdb_mapping':{'status':'linked','type':'tv','id':77,'season':1}})
+        second=self.catalog.detail_artwork(self.base)
+        self.assertEqual(first['detail_artwork']['logos'],['https://image.tmdb.org/t/p/original/first.png','https://image.tmdb.org/t/p/original/generic.png'])
+        self.assertEqual(second['detail_artwork']['logos'],['https://image.tmdb.org/t/p/original/second.png','https://image.tmdb.org/t/p/original/generic.png'])
+        self.assertNotIn(first['detail_artwork']['logos'][0],second['detail_artwork']['logos'])
+
+    def test_steel_ball_run_uses_reviewed_season_six_logo_and_never_stone_ocean(self):
+        registry=json.loads((Path(__file__).resolve().parents[1]/'seed'/'tmdb-logo-scopes.json').read_text(encoding='utf-8'))
+        self.catalog._logo_scopes=registry['series']
+        mark=registry['series']['tv:45790']
+        self.store.cache_set('tmdb:artwork:v1:tv:45790',{'logos':mark['seasons']['5'],'logo_language':'ja'},60)
+        work={**self.base,'tmdb_id':45790,'tmdb_season':6,
+              'tmdb_mapping':{'status':'episode_scope','type':'tv','id':45790,'season':6,'episode':1}}
+        logos=self.catalog.detail_artwork(work)['detail_artwork']['logos']
+        self.assertEqual(logos[0],mark['seasons']['6'][0])
+        self.assertFalse(set(logos)&set(mark['seasons']['5']))
+
+    def test_unreviewed_multi_season_logo_is_not_guessed_from_gallery_ranking(self):
+        self.catalog._logo_scopes={}
+        self.store.cache_set('tmdb:artwork:v1:tv:77',{'logos':['https://image.tmdb.org/t/p/original/random-season.png'],'logo_language':'ja'},60)
+        self.assertEqual(self.catalog.detail_artwork(self.base)['detail_artwork']['logos'],[])
+        self.assertTrue(self.catalog.detail_artwork(self.base)['detail_artwork']['backdrops'])
+
+    def test_new_season_stops_unscoped_first_season_logo_and_preserves_generic_verified_mark(self):
+        self.catalog._logo_scopes={}
+        first={**self.base,'tmdb_season':1,'tmdb_mapping':{'status':'linked','type':'tv','id':77,'season':1}}
+        self.assertTrue(self.catalog.detail_artwork(first)['detail_artwork']['logos'])
+        self.catalog.save_works([self.base])
+        self.assertEqual(self.catalog.detail_artwork(first)['detail_artwork']['logos'],[])
+        self.catalog._logo_scopes={'tv:77':{'generic':['/generic.png']}}
+        self.assertEqual(self.catalog.detail_artwork(self.base)['detail_artwork']['logos'],['https://image.tmdb.org/t/p/original/generic.png'])
 
 
 if __name__=='__main__':unittest.main()

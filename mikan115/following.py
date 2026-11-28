@@ -273,13 +273,12 @@ class RSS:
                     self.decision(sub['id'],item['key'],'PENDING')
                     try:
                         magnet=item['magnet'] or torrent_magnet(self.catalog.fetch(item['torrent'],binary=True),item['title'])
-                        job=self.workflow.create(user,magnet,item['title'],sub['work_id'] or item['bangumi_id'],subscription_id=sub['id'],subscription_revision=sub['revision'])
+                        metadata={'release':item['release'],'rules':rule,'work_id':sub['work_id'] or item['bangumi_id'],'bangumi_id':item['bangumi_id']}
+                        job=self.workflow.create(user,magnet,item['title'],sub['work_id'] or item['bangumi_id'],subscription_id=sub['id'],subscription_revision=sub['revision'],naming=metadata)
                         if job is None:return
                         with self.store.transaction() as c:
                             c.execute('INSERT OR REPLACE INTO subscription_items VALUES(?,?,?)',(sub['id'],item['key'],job['id']))
                             c.execute('UPDATE subscription_claims SET transfer_id=? WHERE user_id=? AND subscription_id=? AND item_key=?',(job['id'],user['id'],sub['id'],item['key']))
-                            metadata={'release':item['release'],'rules':rule,'work_id':sub['work_id'] or item['bangumi_id'],'bangumi_id':item['bangumi_id']}
-                            c.execute('INSERT OR IGNORE INTO transfer_naming VALUES(?,?,?,?,?,?)',(job['id'],json.dumps(metadata,ensure_ascii=False),int(rule['rename']),'PENDING',None,time.time()))
                             if rule['download_to_vps']:
                                 c.execute('INSERT OR IGNORE INTO following_downloads(subscription_id,transfer_id,revision) VALUES(?,?,?)',
                                           (sub['id'],job['id'],sub['revision']))
@@ -301,6 +300,8 @@ class RSS:
                 ORDER BY d.rowid LIMIT 10""",(time.time(),))
             for row in pending:
                 if self.settings()['paused']:return
+                layout=getattr(self.workflow,'layout',None)
+                if layout and not layout.ready(row['transfer_id']):continue
                 sub=self.store.one('SELECT enabled,removed,revision FROM subscriptions WHERE id=?',(row['subscription_id'],))
                 if not sub or not sub['enabled'] or sub['removed'] or sub['revision']!=row['revision']:continue
                 try:

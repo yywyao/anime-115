@@ -28,6 +28,7 @@ class State:
         self.submit_count=0;self.calls=[];self.cookies=[];self.expired=False;self.malformed_submit=False
         self.fail_submit=False;self.bad_file_name=False;self.feed_hashes=[HASH];self.rss_items=None;self.rename_count=0;self.following_demo=False
         self.resource_demo=False
+        self.cache_paths=False;self.folder_views={}
 
     def mkdir(self,parent,name):
         for cid,f in self.folders.items():
@@ -41,7 +42,8 @@ class State:
                 cid=json.loads(storage['addition'])['root_folder_id']
                 relative=path[len(mount):].strip('/')
                 for part in relative.split('/') if relative else []:
-                    matches=[k for k,v in self.folders.items() if v['parent']==cid and v['name']==part]
+                    if self.cache_paths and cid in self.folder_views:matches=[self.folder_views[cid][part]] if part in self.folder_views[cid] else []
+                    else:matches=[k for k,v in self.folders.items() if v['parent']==cid and v['name']==part]
                     if not matches:return None
                     cid=matches[0]
                 return cid
@@ -105,6 +107,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if path=='/api/fs/list':
                 cid=self.state.path_cid(body['path'])
                 if cid is None:return self.result({'code':500,'message':'not found'})
+                self.state.folder_views[cid]={f['name']:k for k,f in self.state.folders.items() if f['parent']==cid}
                 items=[{'name':f['name'],'is_dir':True,'size':0} for k,f in self.state.folders.items() if f['parent']==cid]+self.state.files.get(cid,[])
                 if self.state.bad_file_name:items=[{'name':'../daily-secret.txt','size':10,'is_dir':False}]
                 return self.result({'code':200,'data':{'content':items,'total':len(items)}})
@@ -143,11 +146,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 items += [{'fid':v.get('fid',cid+str(i+1).zfill(3)),'cid':cid,'n':v['name'],'s':v['size']} for i,v in enumerate(self.state.files.get(cid,[])) if not v.get('is_dir')]
                 return self.result({'state':True,'cid':cid,'count':len(items),'offset':0,'data':items,'path':[{'cid':cid}]})
             if path=='/115-web/files/batch_rename':
+                if body.get('fid') in self.state.folders:
+                    assert body['fid'] not in {'0','1'}
+                    self.state.folders[body['fid']]['name']=body['file_name'];return self.result({'state':True})
                 for cid,rows in self.state.files.items():
                     for i,row in enumerate(rows):
                         if str(row.get('fid',cid+str(i+1).zfill(3)))==body.get('fid'):
                             assert cid not in {'0','1'};row['name']=body['file_name'];self.state.rename_count+=1;return self.result({'state':True})
                 return self.result({'state':False,'errno':20004})
+            if path=='/115-web/files/move':
+                for cid,rows in self.state.files.items():
+                    for i,row in enumerate(rows):
+                        if str(row.get('fid',cid+str(i+1).zfill(3)))==body.get('fid[0]'):
+                            assert cid not in {'0','1'} and body['pid'] not in {'0','1'}
+                            row['fid']=body['fid[0]'];rows.remove(row);self.state.files.setdefault(body['pid'],[]).append(row)
+                            return self.result({'state':True})
+                return self.result({'state':False,'errno':20004})
+            if path=='/115-web/rb/delete':
+                cid=body['fid[0]'];assert cid not in {'0','1'}
+                assert not self.state.files.get(cid) and not any(f['parent']==cid for f in self.state.folders.values())
+                self.state.folders.pop(cid,None);return self.result({'state':True})
             if path=='/115-web/files/add':
                 cid=self.state.mkdir(body['pid'],body['cname']);return self.result({'state':True,'cid':cid})
             if path=='/115-offline/lixian/':return self.result({'state':True,'page_count':1,'tasks':list(self.state.cloud.values())})

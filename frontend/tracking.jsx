@@ -2,7 +2,7 @@ import {api,post} from './api.js';
 import {Modal,Notice,displayTitle} from './components.jsx';
 import {subtitleVersions as versions,resolutions} from './release-selection.js';
 const R=()=>window.Mikan115Runtime.React;
-const initialRules={group_ids:[],versions:[],resolutions:[],include:[],exclude:[],dedupe:'episode',wait_minutes:5,allow_batches:false,min_episode:null,max_episode:null,rename:false,season:null,episode_offset:0,episode_title:false,download_to_vps:false};
+const initialRules={group_ids:[],versions:[],resolutions:[],include:[],exclude:[],dedupe:'episode',wait_minutes:5,allow_batches:false,min_episode:null,max_episode:null,rename:true,season:null,episode_offset:0,episode_title:false,download_to_vps:false};
 const follows={list:null,promise:null,listeners:new Set()};
 function refreshFollows(list){follows.list=list;for(const notify of follows.listeners)notify(list);}
 export function useFollowing(){const {useState,useEffect}=R(),[list,setList]=useState(follows.list||[]);useEffect(()=>{follows.listeners.add(setList);if(!follows.promise)follows.promise=api('/subscriptions').then(x=>refreshFollows(x.subscriptions)).catch(()=>refreshFollows([]));return()=>follows.listeners.delete(setList);},[]);return list;}

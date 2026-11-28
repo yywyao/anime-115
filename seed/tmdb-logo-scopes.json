@@ -1,0 +1,1816 @@
+{
+  "version": 1,
+  "review_method": "Visual inspection of Japanese TMDB logo assets; numbered and story-arc marks bind to explicit TMDB seasons. Unreviewed multi-season galleries are not a season association.",
+  "sources": [
+    "https://developer.themoviedb.org/reference/tv-images",
+    "https://developer.themoviedb.org/reference/tv-season-images"
+  ],
+  "series": {
+    "tv:56559": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/bNArHjq7VUx0rajU658tinzVbdN.png"
+      ],
+      "seasons": {}
+    },
+    "tv:126437": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/nVW1bKugkTquzA9YkKrM8gtiAj2.png"
+      ],
+      "seasons": {}
+    },
+    "tv:207347": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qmFBFeZS7gkDKCGsl2KDVfaw4t3.png"
+      ],
+      "seasons": {}
+    },
+    "tv:216467": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qTgoi2qrlGNv336FEEw7xy7dkd1.png"
+      ],
+      "seasons": {}
+    },
+    "tv:105248": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/bztqAwIqUrNBaRNlc7bSusWzUVP.png"
+      ],
+      "seasons": {}
+    },
+    "tv:60761": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/aq5Zk0RRRbDfqMSoZR5ekzGtoE1.png"
+      ],
+      "seasons": {}
+    },
+    "tv:134667": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/9JnQvVlQYoiZLuxXgrsos14q6Db.png"
+      ],
+      "seasons": {}
+    },
+    "tv:206630": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/iFDqEpRDqLWgvoODx4fNTKOAdD4.png",
+          "https://image.tmdb.org/t/p/original/lL5hHpdlqemKRxQATQJYhO1bzWV.png"
+        ]
+      }
+    },
+    "tv:230050": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/iU1DbGLpQCZ63Ca0agQhuhNGHrF.png"
+      ],
+      "seasons": {}
+    },
+    "tv:205493": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qOjOkavDWKsfH4dcAckQItnrU6H.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:117061": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dMDCnhh0RNEchb69EjaMwtwFmMA.png"
+      ],
+      "seasons": {}
+    },
+    "tv:45790": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ybfaW99Nq00ceHd65YIYtWMzRCR.png"
+      ],
+      "seasons": {
+        "5": [
+          "https://image.tmdb.org/t/p/original/tX7BiVThvTCfZSfyJKsPfC7Ic5t.png",
+          "https://image.tmdb.org/t/p/original/j9sYGJHxzJ3t6n4GpirJ4OkYgjO.png"
+        ],
+        "6": [
+          "https://image.tmdb.org/t/p/original/82qRHpawyQBsUevftVUoLpNRMHG.png"
+        ]
+      }
+    },
+    "tv:200777": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/u3579S4oq0V6u7ENqKAJLOEmJna.png"
+      ],
+      "seasons": {}
+    },
+    "tv:283428": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/6Ff19Sx9sO42WZrQOfm7qEVPhsx.png"
+      ],
+      "seasons": {}
+    },
+    "tv:293124": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/asRpjthSuG46XfpxnZNDNpvw70j.png"
+      ],
+      "seasons": {}
+    },
+    "tv:253811": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/cDrUqfbSgZItMVR8E8U3jUVqfL3.png"
+      ],
+      "seasons": {}
+    },
+    "tv:280042": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dlLrd2N8QRLCrqAR0G8K2LcIME4.png"
+      ],
+      "seasons": {}
+    },
+    "tv:37854": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/eoeh9poBFq7dqvSNAJeiFjGsdDU.png"
+      ],
+      "seasons": {}
+    },
+    "tv:94664": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/j7np3f0CAtGJ27whs3Ku47uyS98.png"
+      ],
+      "seasons": {}
+    },
+    "tv:109805": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/q7iYYBNZRmDt4xshs1racfCEWwO.png"
+      ],
+      "seasons": {}
+    },
+    "tv:222623": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/iueokeZr3iVcfj1EMauXOOY0mpV.png"
+      ],
+      "seasons": {}
+    },
+    "tv:123528": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/cj4bNAsEyxiMjhuoOmLloN1phti.png"
+      ],
+      "seasons": {}
+    },
+    "tv:79166": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/zSenuQXnWxGzVTLySSBmqGigg6G.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/6mk3F6gyiST5jKkWSc5H78TsxhR.png",
+          "https://image.tmdb.org/t/p/original/u8MXhb0G9lnrfKlEUMgdY5NvqVy.svg"
+        ]
+      }
+    },
+    "tv:139512": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/sL6eyHLkyy9SvMD8UmP2lRbYy9j.png"
+      ],
+      "seasons": {}
+    },
+    "tv:69346": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/r1rYTt556zwbEiArqQlPd7l1Y4c.png"
+      ],
+      "seasons": {}
+    },
+    "tv:254492": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/mGjeYGIa1jRvwXfshbt9ltVQjMh.png"
+      ],
+      "seasons": {}
+    },
+    "tv:258348": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/7xQFrCWWEOGIm4E8xamWEbjup3G.png",
+          "https://image.tmdb.org/t/p/original/x3zwjF8e4iQGQKmwyBgdbUKE7lr.png",
+          "https://image.tmdb.org/t/p/original/asnHRjTj98Lu6EHBhJu9WLlyaIQ.svg"
+        ]
+      }
+    },
+    "tv:110837": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/u7COmP6JOlIeHHG2jue13eVamlN.png"
+      ],
+      "seasons": {}
+    },
+    "tv:82684": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ak9FVlNEkl22WnI4wyRm16u2dNg.png"
+      ],
+      "seasons": {}
+    },
+    "tv:280049": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/6ssFhMDuEbk2Xk24ghSV7GXxAzz.png"
+      ],
+      "seasons": {}
+    },
+    "tv:91768": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rzYjadCzMBtQorfkuifGMVnyfO8.png"
+      ],
+      "seasons": {}
+    },
+    "tv:240576": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/Ail8ZsZigchWTpWAlO7PE4qTDeb.png"
+      ],
+      "seasons": {}
+    },
+    "tv:106301": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/mrH1Ey1vWECsHyj4QyKdBPCv4nD.png"
+        ],
+        "2": [
+          "https://image.tmdb.org/t/p/original/q3LtvcuOBKh4qhRpvvMcIEpfT4Z.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/zL473BnX8agTJC9ZFuXfknDjoWn.png"
+        ],
+        "4": [
+          "https://image.tmdb.org/t/p/original/bAqDI0liFUX6MThiIVPOPkLTJEY.png"
+        ]
+      }
+    },
+    "tv:212385": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/tZ1SxrG7PlImNy7ZECWhUHrUjy1.png"
+      ],
+      "seasons": {}
+    },
+    "tv:76757": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/4HHRzjiRKcUHkYL12WjceWvYwcJ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:139060": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/nFjD39X9lBniJypIikznUjb9HGt.png"
+      ],
+      "seasons": {}
+    },
+    "tv:88046": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/27B6dKHVpv2CGPBoeuSLI2tBOY5.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/kkJZk9ypadUBNBbo7UyAZybfnRd.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/hga1wFPblgbfjw1nLn3SMbyo2kN.png"
+        ]
+      }
+    },
+    "tv:234776": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rU1G9NhjWlQQd6OYfdG0T3WwQKz.png"
+      ],
+      "seasons": {}
+    },
+    "tv:237529": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/5tkkIYUFYyXfdzXdCQAGFMinCoi.png"
+      ],
+      "seasons": {}
+    },
+    "tv:154743": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/2s5UaEOu21nPYTMVD9lH9cpOlbv.png"
+      ],
+      "seasons": {}
+    },
+    "tv:72517": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/uUDVTIa2wdb9J7NDl8thfXI09yI.png",
+        "https://image.tmdb.org/t/p/original/6G5CE9b8vzpNxBGiyw9ySh91tEE.png"
+      ],
+      "seasons": {
+        "4": [
+          "https://image.tmdb.org/t/p/original/4V2DcwV5Jer4RtFH6O2ijIV6Z5z.png"
+        ]
+      }
+    },
+    "tv:245842": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/4wPBZZYVC7FqfkILCODUr5sFAdJ.png",
+        "https://image.tmdb.org/t/p/original/kPsnHYpde1XIHeLiNLsoeh4v4sv.png",
+        "https://image.tmdb.org/t/p/original/qqvYzcslEud0wGop96mumrAuS2C.png",
+        "https://image.tmdb.org/t/p/original/ryPlt3KNkwtcY8FUjEX7ScSoJOj.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/zBSaQaaRhHNwcmzOeSCa78BHtIH.png"
+        ]
+      }
+    },
+    "tv:91801": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/o2rDWy5M4Q2RFEyqdKJm9pjK6ri.png"
+      ],
+      "seasons": {}
+    },
+    "tv:274671": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3Hzmorfb4XCdqJPHfaRzHffuntE.png"
+      ],
+      "seasons": {}
+    },
+    "tv:196285": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/xpiVSgEXeKx4hS9kmToVnyIwRq3.png",
+        "https://image.tmdb.org/t/p/original/uBn9vwEGuZiORSancVWmCW8jvMN.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/uTOU9j4UnpSyhsgOwEO2mNb3lu8.png",
+          "https://image.tmdb.org/t/p/original/xPKpVHZZ9BZ8SI4Bs0Y6whnV3dU.png"
+        ]
+      }
+    },
+    "tv:207564": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/a6AW0ONeJ3rrH6TtcOMs6XHK5lT.png"
+      ],
+      "seasons": {}
+    },
+    "tv:86031": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/mhgcJtT9Om6peH2a0xVZ8IeQevo.png"
+      ],
+      "seasons": {}
+    },
+    "tv:65930": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/cVV3xERLBdquh9MspBFOcy63sDA.png"
+      ],
+      "seasons": {}
+    },
+    "tv:260823": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/76EDOUJevtw25ys9PEUhup4mnB5.png"
+      ],
+      "seasons": {}
+    },
+    "tv:67656": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/2ciUHxOB4XozZJY9nOtz3HUlmgs.png"
+      ],
+      "seasons": {}
+    },
+    "tv:219816": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/uP3xHh6MFVQl5fO3aXFYT8H9Ml9.png"
+      ],
+      "seasons": {}
+    },
+    "tv:42972": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/9XA1TXsJxTePQrSVLkV57J0hbE0.png"
+      ],
+      "seasons": {}
+    },
+    "tv:52873": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dKP8ougOs2WtKnhOUVcQktginNx.png"
+      ],
+      "seasons": {}
+    },
+    "tv:46195": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ripxuinuiGB2SurpHRqC8YwgVK1.png",
+        "https://image.tmdb.org/t/p/original/9SHiiFD3Fr2HURMvXeUPlfV7zxY.png"
+      ],
+      "seasons": {}
+    },
+    "tv:45950": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/bUCLd9ydUS3FOQR7A72ZMrcvyPx.png"
+      ],
+      "seasons": {}
+    },
+    "tv:69500": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/logsvlcE5i1HUVsYtYHVoymO0Cn.png"
+      ],
+      "seasons": {}
+    },
+    "tv:63322": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ojxvIwPRxXuhPExsPuM10eeoLh9.png"
+      ],
+      "seasons": {}
+    },
+    "tv:45254": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/lJVoDMxSiR3WLrirSYlKKQyAmbf.png"
+      ],
+      "seasons": {}
+    },
+    "tv:46437": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/4kkzSXGhlQJTe4IRfQmOAtIVw7s.png"
+      ],
+      "seasons": {}
+    },
+    "tv:108906": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/ikb9Qm3MjgEsqCfpQBbeENK0eNb.png"
+        ]
+      }
+    },
+    "tv:91426": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/gu9TZ506LIhVoJ56JmQ7GsuygdW.png"
+      ],
+      "seasons": {}
+    },
+    "tv:55364": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/A4BPrw0uNqOivVvbQcPgMTcnq3W.png"
+      ],
+      "seasons": {}
+    },
+    "tv:35442": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/6YgAn3QeDxHp5Dv5Tjh8vlTTpry.png"
+      ],
+      "seasons": {}
+    },
+    "tv:44934": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/sKZHyvAfA8djXtdaT560nYj5xw9.png"
+      ],
+      "seasons": {}
+    },
+    "tv:45782": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3hlIgNOJPJm9ruB8Thr5mzQaFid.png"
+      ],
+      "seasons": {}
+    },
+    "tv:44314": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/9BdWoYAmoNFpzyKeM75chKBi4GR.png"
+      ],
+      "seasons": {}
+    },
+    "tv:52891": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/1nIL5It7YUxZfWf1i55ImXyUYAF.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:34742": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/iyLTDISq7jCqnC1jtC0HBQI8SZ4.png"
+      ],
+      "seasons": {}
+    },
+    "tv:53715": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/kafjXP56J6JfW2yXVDS3KB5MQKI.png"
+      ],
+      "seasons": {}
+    },
+    "tv:60654": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/4KtCr5g1CHVk1UW4K0qwV0pKOOS.png"
+        ],
+        "2": [
+          "https://image.tmdb.org/t/p/original/t88BhfiDaz3KzDBLCczlmYwen2T.png"
+        ]
+      }
+    },
+    "tv:56355": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/AgHaxuFwoXmZF6ofEw3ZBDhhpWy.png"
+      ],
+      "seasons": {}
+    },
+    "tv:62741": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dn91TsOiSnfehkscsOKMF9mFy6m.png"
+      ],
+      "seasons": {}
+    },
+    "tv:65503": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/u93uFE7qGzIZWsjF46zrGNWzl7g.png"
+      ],
+      "seasons": {}
+    },
+    "tv:57041": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/yHjJVE3d1jnjjTJyJsBhjjDwjN5.png"
+      ],
+      "seasons": {}
+    },
+    "tv:53918": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rYlFaxHG8qxwVvFDVmjdCNfvZPF.png"
+      ],
+      "seasons": {}
+    },
+    "tv:45247": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/1GZp5RMroRuOkSkVjSf8JvAW2Re.png"
+      ],
+      "seasons": {}
+    },
+    "tv:53721": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/9LFAScLekwuB1MFhAIykABrqzrW.png"
+      ],
+      "seasons": {}
+    },
+    "tv:46065": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qnR5e7G5oECj6ihczlDPITFCyRy.png"
+      ],
+      "seasons": {}
+    },
+    "tv:48623": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/yGwekmoXM1AtbROLrs9Rcw2BEOE.png"
+      ],
+      "seasons": {}
+    },
+    "tv:52883": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/c9Hm2dhQIpx6lkwQXIURvCwV6ZN.png"
+      ],
+      "seasons": {}
+    },
+    "tv:50071": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/nXTxrtMcp5Ip29iaZ9dFSNoegiO.png"
+      ],
+      "seasons": {}
+    },
+    "tv:65676": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/j4NP4FXjS4BcsSF4lyHXfKEo08e.png"
+      ],
+      "seasons": {}
+    },
+    "tv:46004": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/jgIO579fSEfnXdGz0OKKNigXa2q.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:30977": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/q7dfzYa37TRDptOkUOEkVOvF9op.png"
+      ],
+      "seasons": {}
+    },
+    "tv:1429": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dFjvy24dBztd4gCv8HBD5h5BXdZ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:49471": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/8PGe95jxaPvuSfBWDYnmxYhCJQi.png"
+      ],
+      "seasons": {}
+    },
+    "tv:78589": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/sFxTioQd624ftbJkPFNdrFmPwLj.png"
+      ],
+      "seasons": {}
+    },
+    "tv:63576": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/cZRv5tOPHeKfHNeTHEo3GLeaYiO.png"
+      ],
+      "seasons": {}
+    },
+    "tv:58237": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/aWbKPQyLK4HbrN6xuboYgjXTMmb.png"
+      ],
+      "seasons": {}
+    },
+    "tv:61441": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/7qiNZol8ZjrCqv0f5WAcrjWbdq9.png"
+      ],
+      "seasons": {}
+    },
+    "tv:67676": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/1o6C6MLkZ0wE1rYYKoPfiCYIU03.png"
+      ],
+      "seasons": {}
+    },
+    "tv:45783": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/lB7vdwPGbchTDzhzNmWkZbiDjU0.png"
+      ],
+      "seasons": {}
+    },
+    "tv:60846": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/nevrovM9Ev8CXMkOsezM0o2g3aU.png"
+      ],
+      "seasons": {}
+    },
+    "tv:66875": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dBDxToM583InGFbeTb3v1Avmr3q.png"
+      ],
+      "seasons": {}
+    },
+    "tv:61440": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/yu2f0ykOndPzfTV3EUSaAjG3rYf.png"
+      ],
+      "seasons": {}
+    },
+    "tv:62110": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/hTIwptfie9atjFeBWPlkzzSfpVx.png"
+      ],
+      "seasons": {}
+    },
+    "tv:57407": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/9Eq4DIuO4ae7nLxcItb8nsPJmA4.png"
+      ],
+      "seasons": {}
+    },
+    "tv:62640": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/m8pKDXWtFiU16i4JkDYXRTBtnxI.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:61529": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/keRDTuHQ2u5mvEz8m57lOfNVqmH.png"
+      ],
+      "seasons": {}
+    },
+    "tv:64710": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/gPAIRih1UZszUbKKs422F2Cw45.png"
+      ],
+      "seasons": {}
+    },
+    "tv:72806": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/9zsbiOcG1EwyFbphoM1Km5FxPrv.png"
+      ],
+      "seasons": {}
+    },
+    "tv:61791": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/prl7isQ1BSMXQ5wCoOOW8BBCprF.png"
+      ],
+      "seasons": {}
+    },
+    "tv:60833": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/zDVATvV3TdiIWnG05Q7x6WzKToy.png"
+      ],
+      "seasons": {}
+    },
+    "tv:60831": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ChKWQt3JrySV4rilmf4EaE1ZrL.png"
+      ],
+      "seasons": {}
+    },
+    "tv:60825": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/mldwHOpRu91Q39prxDnAbdFb9AG.png"
+      ],
+      "seasons": {}
+    },
+    "tv:60863": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/woMjalYsNTf48pCH0ujjgp2ZHrY.png"
+      ],
+      "seasons": {}
+    },
+    "tv:60843": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/9xCmJxURVSXOggWLroqAJifiSmO.png"
+      ],
+      "seasons": {}
+    },
+    "tv:69355": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/yy8E17viMQAprgP2HqQrz8zT3So.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:61339": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/1v1pj2UulAa51PLa5BajgHhDdv5.png"
+      ],
+      "seasons": {}
+    },
+    "tv:61374": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/wqzxTeEhn6CXvOVdFm3VQBx65jR.png",
+        "https://image.tmdb.org/t/p/original/6cTI53hGqpwcHBFp63DwmZbdvSW.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/eqJOVZuwKTG81EmIrTROUfcP4it.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/AbSg1Yl2XHW8pS0csgNLCTRvNn2.png"
+        ]
+      }
+    },
+    "tv:50712": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qMaa0Y34jTOsNO7yxWwVKJnZSUo.png"
+      ],
+      "seasons": {}
+    },
+    "tv:61398": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/kUsZprVqJORhA711768LnswhDdb.png"
+      ],
+      "seasons": {}
+    },
+    "tv:90391": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/gn9wKdzkm4K3FI6VmyUfftLZHxL.png"
+        ]
+      }
+    },
+    "tv:61422": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/jjcS29vopaQx72c0scQjJqcZWmW.png"
+        ],
+        "2": [
+          "https://image.tmdb.org/t/p/original/8NcRdP0XI5vi4aG8KLQpIsRLTlT.png"
+        ]
+      }
+    },
+    "tv:61628": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/nOZ2MCBxD3neyA3kWf79XHZ8Uh4.png"
+      ],
+      "seasons": {}
+    },
+    "tv:61433": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/5xcvIiXULjlIwTLYopjCMEQ4kSB.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/rr5zBmUgc8aEbFCAPFOFi8DMk1e.png"
+        ]
+      }
+    },
+    "tv:71493": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/aZkcHEfEEsD7AzoxkrvTeUbzaj9.png"
+      ],
+      "seasons": {}
+    },
+    "tv:64163": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/nbxQHNlJKtfy8mmKA7DU5X13Vk0.png"
+      ],
+      "seasons": {}
+    },
+    "tv:66862": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dc7VFhD2A2PgDKuAsFeuBCgApYH.png"
+      ],
+      "seasons": {}
+    },
+    "tv:255029": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/hMPmZgwCESjq7yJW1y7K7HxYWJH.png"
+      ],
+      "seasons": {}
+    },
+    "tv:62327": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3nLQqy9QjSmNGGIYVXUylgHYUQh.png"
+      ],
+      "seasons": {}
+    },
+    "tv:62564": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/w1A0hQKKmO2dVoE0HsivAqOONoL.png"
+      ],
+      "seasons": {}
+    },
+    "tv:62745": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/cvpNNMNALurA2OUKL0PffCzYiEJ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:62273": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/3iEYTX7OxsduLJqVwA3iA1a1Zs0.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/juu9f3JMtqkNLcpYhjuyyRNNQ50.png",
+          "https://image.tmdb.org/t/p/original/ahN7bwAH4ymsKe8ecJg3rzg3RPN.png"
+        ],
+        "4": [
+          "https://image.tmdb.org/t/p/original/ladvSio2Uh94eWGxSOkdIFcDdOg.png"
+        ]
+      }
+    },
+    "tv:62601": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/gyitCfqYN3dZanL2clOrEdlFtJi.png"
+      ],
+      "seasons": {}
+    },
+    "tv:64196": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3BUVYOLlWxyONEJCop7cUAGPi0X.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/n2Gw1JpxoVydYULJiinVauofEhS.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/tegxRHHiayiYYQn9XSj10xdCy4i.png"
+        ],
+        "4": [
+          "https://image.tmdb.org/t/p/original/4Rc8jeUTqTG9TAJDKa3yUrL1Ny8.png"
+        ]
+      }
+    },
+    "tv:31572": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/aNWtFInNzM64KstyqR5JgkcC6rp.png"
+      ],
+      "seasons": {}
+    },
+    "tv:67126": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rin0HCQWOYNPKXDa0mtyAVq9L7b.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:63926": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/yN1pAtpTNvQtPauLpFTP3KzGZNc.png"
+      ],
+      "seasons": {}
+    },
+    "tv:46412": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3Z9slqMGqOWi8KGbpWPwj61Kpnr.png"
+      ],
+      "seasons": {}
+    },
+    "tv:71785": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/o0oUkk43C3qoGodkub8xJZXPQqt.png"
+      ],
+      "seasons": {}
+    },
+    "tv:68134": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/de9XDmcHAWyQXp6oFo1DKLGo6Z2.png"
+      ],
+      "seasons": {}
+    },
+    "tv:65844": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/8sW8IRMpZNvPHtTZIBxbCjyYEfX.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/l9XQhdsfzOgjceYSOLOUyQFftpS.png",
+          "https://image.tmdb.org/t/p/original/pJEQ2jW2BKsHOLqWqqLO83muRm2.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/lyM9NUlicFuIaWfcEGRNfqDN2zK.png"
+        ]
+      }
+    },
+    "tv:65292": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/f4QdAGfb61o2i4PkAW8rkezeRLA.png"
+      ],
+      "seasons": {}
+    },
+    "tv:65523": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/vY49Mj0gtUnFcBvBQCDS4ntnLF0.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/zWiykhhcbZTO0JxiLlVvbz8G4IP.png"
+        ]
+      }
+    },
+    "tv:68136": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/hw2JQDi1l6kIkt1T7mRu4uR2FGP.png"
+      ],
+      "seasons": {}
+    },
+    "tv:102774": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qAOBSsgHFRrEJpXa6WKKyTslYAc.png"
+      ],
+      "seasons": {}
+    },
+    "tv:66103": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/7a0hHKWcvszIT36qD8bKwPD1JWp.png"
+      ],
+      "seasons": {}
+    },
+    "tv:66104": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/cqPpiyz9FkpMocxLr7nsXC0ibkt.png"
+      ],
+      "seasons": {}
+    },
+    "tv:65929": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/etOQDN7h4h3ytE6fYCDyXQzLKCH.png"
+      ],
+      "seasons": {}
+    },
+    "tv:67012": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ik3vzHEkMQqMlPMcbu4W0NxZp1R.png"
+      ],
+      "seasons": {}
+    },
+    "tv:67075": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/7VIlNpmEzQGH0e7z88U3Oa8cdcR.png"
+      ],
+      "seasons": {}
+    },
+    "tv:66053": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/puysBFc6rp067Wj5PemyS6DYKUh.png"
+      ],
+      "seasons": {}
+    },
+    "tv:65383": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/5pSLWkbQwBbssYKzjXVMdeoVMwl.png"
+      ],
+      "seasons": {}
+    },
+    "tv:67628": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/3XnwoEMnToNX72WZunG40OhbokE.png"
+        ],
+        "2": [
+          "https://image.tmdb.org/t/p/original/x9911wp1dYTYcVvQDlvNGvuck4P.png",
+          "https://image.tmdb.org/t/p/original/wlXJNSMhisqeS8161ZFRBQpVToj.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/xSsZwtfVoJ6ZF4Jv3ftY6lzTAAG.png",
+          "https://image.tmdb.org/t/p/original/vf4ZEvHHWCh0JsbyhwTTMhgueGs.png"
+        ]
+      }
+    },
+    "tv:67324": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/gD1odZj9yreXgZ3KfkyEYAajymr.png"
+        ]
+      }
+    },
+    "tv:65336": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/fTHrc7tU6QsiYYh2lvms930JM6Y.png"
+      ],
+      "seasons": {}
+    },
+    "tv:43004": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/skf0lf6k4YOFE3J9Apkfpb7RH8U.png"
+      ],
+      "seasons": {}
+    },
+    "tv:115785": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qYbDFKz3UEijbmMRmqrjQ9NEhw9.png"
+      ],
+      "seasons": {}
+    },
+    "tv:69295": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qqT2DITSixx8Qwc5sFrXu4JoM3g.png"
+      ],
+      "seasons": {}
+    },
+    "tv:38464": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/lao9MlkaDRAWvioqqdqyace5dfG.png"
+      ],
+      "seasons": {}
+    },
+    "tv:69288": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/2jlbHn7c9WQx1G6bVjuOISNrH0V.png"
+      ],
+      "seasons": {}
+    },
+    "tv:69298": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ymeQXCCBdF7N76sMGoRbKhnblss.png"
+      ],
+      "seasons": {}
+    },
+    "tv:70972": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/lsKCoIhU6PE8aWR9d8BnGtzgFCB.png"
+      ],
+      "seasons": {}
+    },
+    "tv:71012": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/5ByeD9I8gUqkGjoL4GaeRj6HjZU.png"
+      ],
+      "seasons": {}
+    },
+    "tv:34660": {
+      "generic": [],
+      "seasons": {
+        "4": [
+          "https://image.tmdb.org/t/p/original/8BbI0taRwz8LmcJruqfTPsTG1xj.png"
+        ]
+      }
+    },
+    "tv:72425": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/o16bKyZKYGz4UQ6vrTkA1NxrnRG.png"
+      ],
+      "seasons": {}
+    },
+    "tv:72636": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/sDENotSx8mTw01m1bLVX7MPsBGv.png"
+      ],
+      "seasons": {}
+    },
+    "tv:72305": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3Ztnng0E1y6as7XStcdOvYBP2b0.png"
+      ],
+      "seasons": {}
+    },
+    "tv:72505": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/kBfHm6OVPV2igBoE3yDKSV62VVH.png"
+      ],
+      "seasons": {}
+    },
+    "tv:73833": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/80V11Hnc05WKcwfuKh80GRCI4Tt.png"
+      ],
+      "seasons": {}
+    },
+    "tv:76075": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/wYfqk6N7sNjoFrtnjIgV5Zmjbaf.png"
+      ],
+      "seasons": {}
+    },
+    "tv:76139": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/sgw5zAhtbam5ekkWQHcbywnkJpw.png"
+      ],
+      "seasons": {}
+    },
+    "tv:75865": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/anr8E1LpWNIVZ6WSVjxq3J4QqLp.png"
+      ],
+      "seasons": {}
+    },
+    "tv:80623": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/704yD0hSjvqgOzlhkNzGRwmcaN3.png"
+      ],
+      "seasons": {}
+    },
+    "tv:77694": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/m0D3R3VX1SeOJVoxk1OseQttaJh.png"
+      ],
+      "seasons": {}
+    },
+    "tv:78204": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/kBi2BxaL1OvHwcmOkVzxD6aJUsx.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:78476": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rwf717SGYI1bCZ2svOqkuXjBu3c.png"
+      ],
+      "seasons": {}
+    },
+    "tv:78483": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/xoKttBdM9JdycTANUKd8fILKSz1.png"
+      ],
+      "seasons": {}
+    },
+    "tv:77721": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/59YngbSK1lAZsXLko383LnmWKDX.png"
+      ],
+      "seasons": {}
+    },
+    "tv:76821": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rdLzPahYkHqYEZqVKYTtoJi2hBW.png"
+      ],
+      "seasons": {}
+    },
+    "tv:79024": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/c1cEYIkULTEmw6Y7847lHZmVi75.png"
+      ],
+      "seasons": {}
+    },
+    "tv:78941": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/9ptXs9GzSUICm9XxlMjza3MWhzp.png"
+      ],
+      "seasons": {}
+    },
+    "tv:107974": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/jxoFFG9BXuM4sekGJdapiNeFZuh.png"
+      ],
+      "seasons": {}
+    },
+    "tv:80665": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/v3rp0emCpjwnBj0G3iA9giQZm5X.png"
+      ],
+      "seasons": {}
+    },
+    "tv:80713": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/bS1Ym1SJ3f9YBZ7ZSgSwT19MZcC.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:80671": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/k8NoWHfCr0Xm3URu1kqZEzhpWxI.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:80853": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/svxFe6a39ReUwuObrHsRQiFRBpp.png"
+      ],
+      "seasons": {}
+    },
+    "tv:83314": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/xNND1TQJe6CgptoCzpoXo8A4WiL.png"
+      ],
+      "seasons": {}
+    },
+    "tv:82591": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/sx8b0dphgKY50lr0wfNSHnbGTDl.png"
+      ],
+      "seasons": {}
+    },
+    "tv:82739": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/uOHNfgzwxgpcjY9BwJaxetmgMvC.png"
+      ],
+      "seasons": {}
+    },
+    "tv:82958": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/weSt8OFJyaN1eUr2GmJfOGAgViX.png"
+      ],
+      "seasons": {}
+    },
+    "tv:83095": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qmWCT3WyprAogKoqauRO1IqEVbO.png"
+      ],
+      "seasons": {}
+    },
+    "tv:83097": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/bdV3KdgHBv02WCbFmleXB6Be3jY.png"
+      ],
+      "seasons": {}
+    },
+    "tv:83121": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/pue7RIHTJTEzaOLdFWDRfsI1Axa.png",
+          "https://image.tmdb.org/t/p/original/ohOgIHoo3peag8oz9nVx99ueqDv.png"
+        ],
+        "2": [
+          "https://image.tmdb.org/t/p/original/pue7RIHTJTEzaOLdFWDRfsI1Axa.png",
+          "https://image.tmdb.org/t/p/original/ohOgIHoo3peag8oz9nVx99ueqDv.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/fBBs56V3tuZI3vbQAkCwBgoEkLn.png"
+        ]
+      }
+    },
+    "tv:85937": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/vcyhBrJi1SH5mKMDaOBA4K73EH7.png"
+      ],
+      "seasons": {}
+    },
+    "tv:87473": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/uHokkC04ezjlx9ZpyFxktjQNMUc.png"
+      ],
+      "seasons": {}
+    },
+    "tv:87456": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/exdTMP1qKzqPUcMHspWIWxPSb41.png"
+      ],
+      "seasons": {}
+    },
+    "tv:87432": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/tCf0gX212hhxIRpYg7b3XWZAam6.png"
+      ],
+      "seasons": {}
+    },
+    "tv:87478": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3bZmki1OqPSORmNmnWtkMNoDIo1.png",
+        "https://image.tmdb.org/t/p/original/gW6JKX4RIVOnhWT3QUIjfrLK315.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/m0jPtQdWmakWoNCMx9YeHdsfV84.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/kk15hVq9KKQ4WuYU5Ezcd3QmEsE.png"
+        ]
+      }
+    },
+    "tv:88044": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/fjDR5at0EOh6eYRxWN8Q0sslB0U.png"
+      ],
+      "seasons": {}
+    },
+    "tv:86034": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/j5MxWWqsvg2fTSF4T3gJ5YWNiim.png"
+      ],
+      "seasons": {}
+    },
+    "tv:90660": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/8UkPQbkthwtPuxhM9qKC1lS7Z8j.png"
+      ],
+      "seasons": {}
+    },
+    "tv:88803": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3oGnULiLj83BVKjobwxRSIUEVau.png"
+      ],
+      "seasons": {}
+    },
+    "tv:88806": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3hWpu657Fw1GlmJjMmTbnpVSfCQ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:91764": {
+      "generic": [],
+      "seasons": {
+        "3": [
+          "https://image.tmdb.org/t/p/original/eCRK9NBdsgJS3ertpMmT0IXAbeO.png"
+        ]
+      }
+    },
+    "tv:94523": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/txCcmWkNqbaeXRWRNIDHbNZRrwB.png"
+      ],
+      "seasons": {}
+    },
+    "tv:96402": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/4RfftPq2kMvNIxP38p0UaLVAqII.png"
+      ],
+      "seasons": {}
+    },
+    "tv:90999": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/xvoITSZsqAs7CCQcZV7dscfAD5Q.png"
+        ]
+      }
+    },
+    "tv:95269": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/gYSJW4JFxDNV5CmBLyCFghsag2.png",
+          "https://image.tmdb.org/t/p/original/zi20yMzJErtLuEyXRlWNX6QVvPK.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/zqfiITW2e7Hz8OLQsCOVz8yPqzP.png"
+        ]
+      }
+    },
+    "tv:94904": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/7kkhgTSqTe4HrEeYvHOS7EKrjhu.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/bOVZOcGq9A5REpzXivQYosBT9pe.png",
+          "https://image.tmdb.org/t/p/original/8KMmd2Jsf6EVdZJwG7XnitDG3Jh.png"
+        ]
+      }
+    },
+    "tv:99084": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/bTmFFoBAi4KSN4F6OOGzmLHMgei.png"
+      ],
+      "seasons": {}
+    },
+    "tv:98823": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/yQ88hJwmd7E153Su6uGa5Bc2KuO.png"
+        ]
+      }
+    },
+    "tv:97860": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/8OBStFX2S9QoNo0Ga09QLtkJczk.png"
+      ],
+      "seasons": {}
+    },
+    "tv:98665": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/ifpgAsRAKrp0VdexJS5sqgy9bnv.png"
+        ]
+      }
+    },
+    "tv:104518": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/7Z1mDkBWq4cEtqku0NCVC9DrQDJ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:99080": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/gcqgRGWbyYf2a3HgpYEhONH0g6i.png"
+      ],
+      "seasons": {}
+    },
+    "tv:97617": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/aaK8FmC0GIcN1wFlPjoysRMVIWN.png"
+      ],
+      "seasons": {}
+    },
+    "tv:98986": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/vATZBm8LLCSACWgxvqwWVQihak1.png"
+      ],
+      "seasons": {}
+    },
+    "tv:101972": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dcIhjDuoyznpanOEZhgVWdtKlZO.png"
+      ],
+      "seasons": {}
+    },
+    "tv:96139": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/cPZ3FGkbbBVMtVfszcBlQyIQFsS.png"
+      ],
+      "seasons": {}
+    },
+    "tv:103511": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/mmgB4IsWU3yJbS9xyzISlkx2HtE.png"
+      ],
+      "seasons": {}
+    },
+    "tv:97782": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/1p6w3PwUPi5IFNUa7moCS7jz4UK.png"
+      ],
+      "seasons": {}
+    },
+    "tv:102655": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/woCQJceyW6NZdmzeLA0bee4uzOr.png"
+      ],
+      "seasons": {}
+    },
+    "tv:102086": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/yNzcpASPKk7TqhTBzOHvXZ4SyjJ.png",
+          "https://image.tmdb.org/t/p/original/m5vyfOpRLD1MVENiBu8o0lGpciA.png"
+        ]
+      }
+    },
+    "tv:99995": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/vsLMfqT0AB5MoeMG3ADsgj1CftZ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:100049": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rSIcPXlttv98nrlgEjjeU3CwIH0.png"
+      ],
+      "seasons": {}
+    },
+    "tv:106126": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/xHhutSe0Iam8isjT38kbIzWjtCB.png"
+      ],
+      "seasons": {}
+    },
+    "tv:196256": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/srbxzlngE0Ej0RB54FGwpXjH9EL.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/duQuyFYmc2Qde3QY2wQwfaBzdv.png"
+        ]
+      }
+    },
+    "tv:137065": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/tGpix1pBAVoS7hC5VKmPFYPwZ7m.png",
+          "https://image.tmdb.org/t/p/original/pIws8CBtqTr9rMqaaSl9GkqMxVW.png"
+        ],
+        "2": [
+          "https://image.tmdb.org/t/p/original/oMV5d40xrtP4e9OkuGaE0b2KB1q.png",
+          "https://image.tmdb.org/t/p/original/vB8xPszlalIVHgzrnU2doCk7Cvr.png"
+        ],
+        "3": [
+          "https://image.tmdb.org/t/p/original/gcamHtfPIy1Mkwq6AF3RCufJzFV.png"
+        ]
+      }
+    },
+    "tv:99083": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/kA2pFYMBCdOXRQDUkSDme8bCYYq.png"
+      ],
+      "seasons": {}
+    },
+    "tv:117166": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/gms6kRSCF4FgEjHGg6UuXshdghu.png"
+      ],
+      "seasons": {}
+    },
+    "tv:99073": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/k570RpCsITnlHGt61FPJjm8Nbia.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/h90bztguom3sebBKDicJOcBLTU5.png"
+        ]
+      }
+    },
+    "tv:97525": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/uucBoejJLnIvesFYdRVCPC8l3oa.png"
+      ],
+      "seasons": {}
+    },
+    "tv:105556": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/gL9TwzJay3YDV8Yugxhd52VKyf4.png"
+      ],
+      "seasons": {}
+    },
+    "tv:106611": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/1RLHhDY7tVoHNud5Ka17ooDYs62.png"
+      ],
+      "seasons": {}
+    },
+    "tv:115236": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/gFYDdEGJHFNtFcD0F4JY7F9SNYj.png"
+        ]
+      }
+    },
+    "tv:111576": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ox4XIWH2uAF5bGciP8TwhJRT1ge.png"
+      ],
+      "seasons": {}
+    },
+    "tv:112160": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/6OeJeiGrMqmAvRVo7vnKnIF43fr.png"
+      ],
+      "seasons": {}
+    },
+    "tv:114868": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3JYa77Wd3JEParXru038NvasJtc.png"
+      ],
+      "seasons": {}
+    },
+    "tv:113808": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/icqsYK7n8MDxRRRFxv0RBM8NMt8.png"
+      ],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/mHlFnoDo7yclQidlnn9NfXlMOyd.png"
+        ]
+      }
+    },
+    "tv:106055": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/vIZ4jNrjZpiW1n9c3Dms0EPzWGZ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:129600": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/7YjDsAmVZP7a2Sve9QHaxa1m5Oo.png"
+      ],
+      "seasons": {}
+    },
+    "tv:111819": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/tKclSYuK2BWmXe9TmOD6Cp244az.png"
+      ],
+      "seasons": {}
+    },
+    "tv:113137": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/5spl9yWKG0lo04ZPZuVpnI47Nzl.png"
+      ],
+      "seasons": {}
+    },
+    "tv:114478": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3n206kYi07B7hMLherznEna6nvf.png"
+      ],
+      "seasons": {}
+    },
+    "tv:112624": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/mF3ogNIGb5sJHuY5I1BsuhHwGq7.png"
+      ],
+      "seasons": {}
+    },
+    "tv:113256": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/1TYBIZBDik5pgX2eKeQIK5b8PIc.png"
+      ],
+      "seasons": {}
+    },
+    "tv:117706": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rM3Z6KRVzhONThvS4GeG3jCPv0Y.png"
+      ],
+      "seasons": {}
+    },
+    "tv:123525": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/tMwXBnRaGkBExIccjta83N04Mge.png"
+      ],
+      "seasons": {}
+    },
+    "tv:123670": {
+      "generic": [],
+      "seasons": {
+        "1": [
+          "https://image.tmdb.org/t/p/original/yxm6JKdg1TfptNq33iNNwzQ92Ja.png"
+        ]
+      }
+    },
+    "tv:123684": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/sp3DOOKW9hMjxVZ4KABeY7OwoBd.svg"
+      ],
+      "seasons": {}
+    },
+    "tv:133306": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rWRKd5Y4nXE16bo69yMS6nt9zuy.png"
+      ],
+      "seasons": {}
+    },
+    "tv:122587": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/otpNVck8730t8EQIPF94sTJezeh.png"
+      ],
+      "seasons": {}
+    },
+    "tv:130237": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rghak2ZMH2rVdcdkLsf0kcqQP6c.png"
+      ],
+      "seasons": {}
+    },
+    "tv:120089": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/jmGlAa8rW0H2Hu61N1J3P54j7UB.png"
+      ],
+      "seasons": {}
+    },
+    "tv:156898": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/dpknkmbLc3mlZeRKAgdYA2tT06x.png"
+      ],
+      "seasons": {}
+    },
+    "tv:138357": {
+      "generic": [],
+      "seasons": {
+        "2": [
+          "https://image.tmdb.org/t/p/original/gFRWvM1yJ7i9RbqH9S6BJDyeDSm.png",
+          "https://image.tmdb.org/t/p/original/g2fk8tyeL8Mq7mYGse11NhrtR8w.png",
+          "https://image.tmdb.org/t/p/original/a65pyAuFvn21ESknxHAJhdimVWi.png"
+        ]
+      }
+    },
+    "tv:199928": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/qpLXiWTzN1JYw2taaLIHikAegZG.png"
+      ],
+      "seasons": {}
+    },
+    "tv:119495": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/vslxCEwA6pEUc1jJ9a6oJSIMEnV.png"
+      ],
+      "seasons": {}
+    },
+    "tv:209198": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/zxcA4mc1wpL4qIu3qWVNhkqmgTZ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:194665": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/ncLoxevKOYBQt8nQjMNODsomDB0.png"
+      ],
+      "seasons": {}
+    },
+    "tv:210511": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/7ZurVN30pwecxJ3McYnQxOZdvK6.png"
+      ],
+      "seasons": {}
+    },
+    "tv:210899": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/izUB7JdbEk7Zw64B03lZX2bymQV.png"
+      ],
+      "seasons": {}
+    },
+    "tv:220632": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/f7X0WHdqfFOjHn7ztvJwTHaDJre.png"
+      ],
+      "seasons": {}
+    },
+    "tv:197368": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/hOEr8B44pTrXVfeUoZTXg1YxxZP.png"
+      ],
+      "seasons": {}
+    },
+    "tv:209707": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/aKjLn7drUiKSBfSeropnaSrNHD.png"
+      ],
+      "seasons": {}
+    },
+    "tv:220286": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3ehZWNvhzrmj7ocZkzPvnS0fXpT.png"
+      ],
+      "seasons": {}
+    },
+    "tv:234995": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/hY4H7uyvIPIVHL7p3OTFWg2fEZ9.png"
+      ],
+      "seasons": {}
+    },
+    "tv:248086": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/vfwDpq0mcbW7l1LH0gWFBn4kDqZ.png"
+      ],
+      "seasons": {}
+    },
+    "tv:241138": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/oIFVfdtFrUjF8bLuZ8ZmMXEKMoa.png"
+      ],
+      "seasons": {}
+    },
+    "tv:256164": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rzcOGPN0MSF9JuH0q0NLOwwVikc.png"
+      ],
+      "seasons": {}
+    },
+    "tv:259789": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/mXMC9qfG5YMOsLrSvVR3buSPLZ5.png"
+      ],
+      "seasons": {}
+    },
+    "tv:89576": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/sglbfDOCSed3nGW2Kwoc8FPiUX9.png"
+      ],
+      "seasons": {}
+    },
+    "tv:94605": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/3EKbXxhgrIaXTAXXH15kESJqY7G.png"
+      ],
+      "seasons": {}
+    },
+    "tv:123542": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/8mkpthoj7WMjMJn4oIjza2dV1yU.png"
+      ],
+      "seasons": {}
+    },
+    "tv:107255": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/s9pbCqjcjLTjp2XWUOdH9zxI5wX.png"
+      ],
+      "seasons": {}
+    },
+    "tv:86831": {
+      "generic": [
+        "https://image.tmdb.org/t/p/original/rAtRFTbT2OiioCU6tYPYV412Yfn.png"
+      ],
+      "seasons": {}
+    }
+  }
+}

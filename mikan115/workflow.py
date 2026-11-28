@@ -46,6 +46,7 @@ class Workflow:
         self.connection_lock=threading.RLock()
         self.worker_id=secrets.token_hex(12)
         self.next_connection_check=0.
+        self.layout=None
 
     def marker(self,uid):return f'mikan115:{self.store.instance_id}:{uid}'
 
@@ -113,11 +114,13 @@ class Workflow:
             self.store.set_setting('alist_credentials',self.store.encrypt(json.dumps({'password':alist_password,'token':alist_token})))
             self.alist.reset_auth_cache()
         self.alist.preflight()
-        name='Mikan115-Transfers-'+self.store.instance_id[:8]
+        name=prior['root_name'] if prior else 'mikan'
         mount='/mikan115-'+self.store.instance_id[:8]
         if prior:
             cid=prior['root_cid']
-            pan.verify_child('0',cid,name)
+            if self.layout:
+                prior=self.layout.root(pan,prior);name=prior['root_name']
+            else:pan.verify_child('0',cid,name)
         else:
             matches=[f for f in pan.list_files('0') if not f.get('fid') and str(f.get('n') or f.get('name') or '')==name]
             if matches:raise AppError('DEDICATED_FOLDER_ALREADY_EXISTS','此实例的专用目录缺少配套记录，请检查数据目录',409)
@@ -165,12 +168,16 @@ class Workflow:
             raise AppError('TASK_ACCOUNT_MISMATCH','任务所属账号与当前连接不一致',409)
         cookie=self.store.decrypt(b['cookie_encrypted'])
         pan=self.pan_factory(cookie)
+        if self.layout and b['root_name']!='mikan':b=self.layout.root(pan,b)
         pan.verify_child('0',b['root_cid'],b['root_name'])
         self.alist.assert_scope(b['storage_id'],b['root_cid'],b['mount_path'],self.marker(b['account_uid']),b['account_uid'],cookie)
         if task and task.get('task_cid'):
-            pan.verify_child(b['root_cid'],task['task_cid'],task['infohash'])
-            expected=self.alist.safe_path(b['mount_path'],task['infohash'])
-            if task['task_path']!=expected:raise AppError('TASK_SCOPE_MISMATCH','任务目录不匹配，已停止操作',409)
+            layout=self.layout.row(task['id']) if self.layout else None
+            if layout and layout['status']=='PUBLISHED':self.layout.scope(task,pan,b,layout)
+            else:
+                pan.verify_child(b['root_cid'],task['task_cid'],task['infohash'])
+                expected=self.alist.safe_path(b['mount_path'],task['infohash'])
+                if task['task_path']!=expected:raise AppError('TASK_SCOPE_MISMATCH','任务目录不匹配，已停止操作',409)
         return b,pan
 
     def create(self,user,magnet,title='',work_id='',*,subscription_id=None,subscription_revision=None,enqueue_only=False,naming=None):
@@ -189,7 +196,7 @@ class Workflow:
                 c.execute('INSERT OR IGNORE INTO transfer_owners VALUES(?,?)',(tid,user['id']))
                 if naming and (not row or c.execute('SELECT work_id FROM transfers WHERE id=?',(tid,)).fetchone()['work_id']==str(work_id)):
                     c.execute('INSERT OR IGNORE INTO transfer_naming VALUES(?,?,?,?,?,?)',
-                              (tid,json.dumps(naming,ensure_ascii=False),int(naming['rules'].get('rename',False)),'PENDING',None,now))
+                              (tid,json.dumps(naming,ensure_ascii=False),int(naming['rules'].get('rename',True)),'PENDING',None,now))
             if not row:
                 self.store.event(tid,'CREATED','直接创建转存任务，无审批环节')
                 if not enqueue_only:self.submit(tid)
@@ -252,6 +259,9 @@ class Workflow:
         out['files']=self.store.all('SELECT id,name,size,downloads FROM transfer_files WHERE transfer_id=? ORDER BY name',(tid,))
         out['events']=self.store.all('SELECT kind,message,created_at FROM transfer_events WHERE transfer_id=? ORDER BY id DESC LIMIT 15',(tid,))
         out['naming']=self.store.one('SELECT status,error FROM transfer_naming WHERE transfer_id=?',(tid,))
+        if self.layout:
+            row=self.layout.row(tid)
+            out['organization']={key:row[key] for key in ('status','series_name','error')} if row else None
         for f in out['files']:f['download_url']=f'/api/transfers/{tid}/download/{f["id"]}'
         return out
 
@@ -331,7 +341,11 @@ class Workflow:
         f=self.store.one('SELECT * FROM transfer_files WHERE id=? AND transfer_id=?',(file_id,tid))
         if not f:raise AppError('FILE_NOT_FOUND','文件不存在',404)
         with self.connection_lock:
-            self.scope(task)
+            _,pan=self.scope(task)
+            layout=self.layout.row(tid) if self.layout else None
+            if layout:
+                if layout['status']!='PUBLISHED':raise AppError('FILES_ORGANIZING','文件整理中，请稍后再试',409)
+                self.layout.check_file(task,pan,f,layout)
             if not f['path'].startswith(task['task_path']+'/') or '..' in f['path'].split('/'):
                 raise AppError('UNSAFE_PATH','文件超出专用任务目录',403)
             stream=self.alist.proxy_stream(f['path'],range_header)

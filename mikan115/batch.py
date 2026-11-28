@@ -41,6 +41,11 @@ class Batch:
         return normalize_magnet(torrent_magnet(self.catalog.fetch(source.path, binary=True), item['title']))
 
     def queue(self, user, bid, items, rule):
+        work=self.catalog.work(bid)
+        scope=self.catalog.tmdb_scope(work)
+        if scope and scope[0]=='tv' and scope[2] is not None:
+            if rule['season'] not in (None,scope[2]):raise AppError('LIBRARY_SEASON_MISMATCH','季号与当前作品不一致',409)
+            rule={**rule,'season':scope[2]}
         prepared = []
         for item in items:
             resolved = dict(self.magnet(source) for source in item['sources'])

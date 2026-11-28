@@ -32,6 +32,7 @@ class Catalog:
         self._search_index=None;self._updater=None;self._update_stop=threading.Event();self._references=None
         self._public_tmdb=None;self._original_titles={};self._live_titles=None
         self._public_logos=None;self._public_season_posters=None
+        self._logo_scopes=None;self._logo_seasons={}
         self._home_names=None;self._home_posters=None
         self._presentation_updater=None
         self._presentation_archive_cursor=0
@@ -122,7 +123,7 @@ class Catalog:
                 value.pop('subgroups',None);value.pop('subgroupsCount',None)
                 db.execute('INSERT INTO catalog_works VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET mikan_id=excluded.mikan_id,title=excluded.title,year=excluded.year,season=excluded.season,weekday=excluded.weekday,payload=excluded.payload,updated_at=excluded.updated_at',
                     (ident,bid,value.get('title') or '',value.get('year'),value.get('release_season'),value.get('air_weekday'),json.dumps(value,ensure_ascii=False),time.time()))
-        with self._lock:self._search_index=None
+        with self._lock:self._search_index=None;self._logo_seasons={}
 
     def sync_result(self,key,details,ttl,failed=False):
         old=self.store.one('SELECT * FROM catalog_sync WHERE key=?',(key,)) or {}
@@ -633,8 +634,9 @@ class Catalog:
                 if kind=='tv':cached.pop('ratings',None)
         pending=self.metadata.status()['tmdb_configured'] and self.queue_tmdb_title(scope,cached)
         if not cached:return {**out,'metadata_pending':pending}
+        if cached.get('title'):out['series_title']=cached['title']
         if cached.get('tmdbTitle'):out['tmdbTitle']=cached['tmdbTitle']
-        for field in ['poster_url','backdrop_url','overview','overview_zh','genres','episodes','seasons','credits']:
+        for field in ['poster_url','backdrop_url','overview','overview_zh','genres','episodes','seasons','credits','known_seasons']:
             if field=='credits' and not any((cached.get('credits') or {}).values()):continue
             if cached.get(field):out[field]=cached[field]
         if out.get('poster_url'):out['image']=out['poster_url']
@@ -701,10 +703,42 @@ class Catalog:
         if not backdrops:
             legacy=[self.metadata.artwork_url(url,'w1280') for url in (work.get('backdrop_url'),public.get('backdrop_url'))]
             backdrops=list(dict.fromkeys(url for url in legacy if url and url not in blocked))
+        logos=self.scoped_logos(work,identity,logos,public)
         out['detail_artwork']={'backdrops':backdrops,'logos':logos,'logo_language':'ja' if logos else None,
                                'tmdb_id':int(ident),'media_type':kind}
         out['metadata_pending']=bool(work.get('metadata_pending') or pending)
         return out
+
+    def scoped_logos(self,work,identity,candidates,public=None):
+        """A series-wide TV logo gallery cannot confirm a season or story arc."""
+        kind,ident=identity
+        if kind!='tv':return candidates
+        scope=self.tmdb_scope(work)
+        season=scope[2] if scope and scope[:2]==identity else None
+        with self._lock:
+            if self._logo_scopes is None:
+                path=self.seed.with_name('tmdb-logo-scopes.json')
+                self._logo_scopes=(json.loads(path.read_text(encoding='utf-8')).get('series') or {}) if path.is_file() else {}
+            entry=self._logo_scopes.get('tv:'+ident)
+        if entry is not None:
+            generic=entry.get('generic') or []
+            specific=(entry.get('seasons') or {}).get(str(season),[]) if season is not None else []
+            return list(dict.fromkeys(url for value in [*specific,*generic] if (url:=self.metadata.artwork_url(value))))
+        if season is None:return []
+        known={n for n in work.get('known_seasons') or [] if type(n) is int and n>0}
+        with self._lock:cached=self._logo_seasons.get(ident)
+        if cached is None:
+            rows=self.seed_query("SELECT payload FROM works WHERE CAST(json_extract(payload,'$.tmdb_id') AS TEXT)=?",(ident,))
+            rows+=self.store.all("SELECT payload FROM catalog_works WHERE CAST(json_extract(payload,'$.tmdb_id') AS TEXT)=?",(ident,))
+            cached=set()
+            for row in rows:
+                linked=self.tmdb_scope(json.loads(row['payload']))
+                if linked and linked[:2]==identity and linked[2]>0:cached.add(linked[2])
+            with self._lock:self._logo_seasons[ident]=cached
+        known.update(cached);known.add(season)
+        public=public or {}
+        if any(n>1 for n in known) or len(known)>1 or int(public.get('number_of_seasons') or 0)>1:return []
+        return candidates
 
     def person(self,ident):
         if not str(ident).isdigit():raise AppError('NOT_FOUND','人物不存在',404)

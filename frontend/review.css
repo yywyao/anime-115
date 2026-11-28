@@ -52,3 +52,9 @@
 .m115-dialog>footer{flex-wrap:wrap}
 .m115-dialog>footer>button{flex:0 0 auto;white-space:nowrap}
 @media(max-width:600px){.m115-resource-filters{padding:12px}.m115-resource-filter{gap:8px 12px}.m115-resource-group-heading{align-items:flex-start;gap:8px}.m115-resource-group-heading h3 small{display:block;margin:4px 0 0}.m115-resource-group-actions{gap:6px}.m115-dialog .m115-resource-group-actions button{padding:6px 8px}.m115-resource-group-filter .m115-group-options{max-height:180px}}
+
+.m115-resource-destinations{display:flex;flex:0 0 auto;gap:8px;flex-wrap:wrap;justify-content:flex-end}.m115-resource-destinations .secondary-button{background:transparent}@media(max-width:600px){.m115-resource-destinations{width:100%;padding-left:30px;box-sizing:border-box;justify-content:flex-start}.m115-resource{flex-wrap:wrap}.m115-resource>div:not(.m115-resource-destinations){flex:1}.m115-resource-destinations button{flex:1}.m115-dialog>footer>button{flex:1 1 auto}}
+
+.m115-resource>div:not(.m115-resource-destinations){flex:1}.m115-resource-select{flex:0 0 auto}
+
+.m115-work-hero .m115-ratings,.m115-ratings{align-items:center;gap:16px}.m115-rating{display:inline-flex;align-items:center;gap:4px;font-size:15px;line-height:1}.m115-rating img,.m115-rating.mal img,.m115-rating.bangumi img{display:block;object-fit:contain;width:auto;height:15px}.m115-rating b{font-size:15px;line-height:15px}

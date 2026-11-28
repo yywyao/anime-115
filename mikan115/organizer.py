@@ -32,6 +32,21 @@ class Organizer:
         if not work.get('title'):raise AppError('WORK_REQUIRED','请先关联作品',409)
         if override and (not isinstance(override,dict) or set(override)-{'season','episode_offset','episode_title'}):raise AppError('INVALID_RULES','改名规则无效')
         rule=releases.rules({**(meta.get('rules') or {}),**(override or {})});release=meta.get('release') or releases.parse(task['title'])
+        mapping=work.get('tmdb_mapping') or {}
+        if mapping.get('status')=='episode_scope':
+            # A Mikan series may be linked through its first episode. Keep its
+            # identity unchanged and fetch the exact parent season only for naming.
+            scope=self.catalog.tmdb_scope(work)
+            metadata=getattr(self.catalog,'metadata',None)
+            if scope and scope[0]=='tv' and metadata and metadata.status()['tmdb_configured']:
+                key=f'cloud-naming-season:{scope[1]}:{scope[2]}'
+                season_data=self.store.cache_get(key)
+                if not season_data:
+                    season_data=metadata.title('tv',scope[1],scope[2])
+                    if str(season_data.get('tmdb_id'))!=str(scope[1]) or season_data.get('defaultSeason')!=scope[2]:raise AppError('TMDB_SCOPE_CHANGED','TMDB 季度未通过核对',409)
+                    self.store.cache_set(key,season_data,21600)
+                work={**work,'tmdb_season':scope[2],'episodes':season_data.get('episodes') or [],
+                      'series_title':season_data.get('title') or work.get('series_title') or work['title']}
         rows=self.store.all('SELECT * FROM transfer_files WHERE transfer_id=? ORDER BY path',(tid,));media=[f for f in rows if posixpath.splitext(f['name'])[1].casefold() in MEDIA]
         plans=[];skipped=[];bases={}
         for f in media:
@@ -44,7 +59,7 @@ class Organizer:
                 elif episodes!=release_episodes:skipped.append({'name':f['name'],'reason':'文件与资源集号不一致'});continue
             if not parsed['episodes'] and len(media)==1 and not release.get('batch'):episodes=release_episodes
             if len(episodes)!=1:skipped.append({'name':f['name'],'reason':'集号未确认'});continue
-            season=rule['season'] if rule['season'] is not None else work.get('tmdb_season') if (work.get('tmdb_mapping') or {}).get('status')=='linked' else parsed['season']
+            season=rule['season'] if rule['season'] is not None else work.get('tmdb_season') if (work.get('tmdb_mapping') or {}).get('status') in {'linked','episode_scope'} else parsed['season']
             if season is None:skipped.append({'name':f['name'],'reason':'请在追新规则中指定季号'});continue
             if parsed['season'] is not None and parsed['season']!=season:skipped.append({'name':f['name'],'reason':'季号不一致'});continue
             ep=episodes[0]
@@ -55,7 +70,7 @@ class Organizer:
                 continue
             tag=release if release.get('version')!='unknown' else parsed
             tokens=[release.get('group') or parsed.get('group'),releases.VERSIONS.get(tag.get('version')) if tag.get('version') not in (None,'unknown') else '',tag.get('resolution') if tag.get('resolution') not in (None,'unknown') else '']
-            base=clean(work['title'])+f' - S{season:02d}E{ep:02d}'
+            base=clean(work.get('series_title') or work['title'])+f' - S{season:02d}E{ep:02d}'
             if rule['episode_title']:
                 titles=[e.get('title') for e in work.get('episodes',[]) if e.get('season_number')==season and e.get('episode_number')==ep and e.get('title')]
                 if len(titles)==1:base+=' - '+clean(titles[0],60)
@@ -117,6 +132,8 @@ class Organizer:
         elif current!=new_name:raise AppError('RENAME_SOURCE_CHANGED','原文件名已变化，已停止改名',409)
         with self.store.transaction() as db:
             db.execute('UPDATE transfer_files SET path=?,name=? WHERE id=? AND transfer_id=?',(new,new[len(task['task_path'])+1:],op['file_id'],task['id']))
+            if self.workflow.layout:
+                db.execute('UPDATE cloud_outputs SET new_path=?,name=? WHERE transfer_id=? AND file_id=? AND status=\'DONE\'',(new,posixpath.basename(new),task['id'],op['file_id']))
             db.execute("UPDATE rename_operations SET status='DONE',updated_at=? WHERE transfer_id=? AND file_id=? AND old_path=?",(time.time(),task['id'],op['file_id'],old))
         self.workflow.alist.list_files(posixpath.dirname(new))
         self.store.event(task['id'],'FILE_RENAMED','文件已改名')
@@ -128,7 +145,10 @@ class Organizer:
             try:
                 if self.store.one('SELECT count(*) n FROM transfer_owners WHERE transfer_id=?',(row['transfer_id'],))['n']>1:raise AppError('SHARED_TASK','共享任务需管理员手动改名',409)
                 plan=self.preview(owner,row['transfer_id'])
-                if not plan['files']:raise AppError('NAME_UNCONFIRMED','未取得可确认的新文件名，请手动核对',409)
+                if any(p['reason']!='附加内容' for p in plan['skipped']):raise AppError('NAME_UNCONFIRMED','部分文件集号未确认，请预览改名后核对',409)
+                if not plan['files']:
+                    media=self.store.all('SELECT name FROM transfer_files WHERE transfer_id=?',(row['transfer_id'],))
+                    if not any(posixpath.splitext(f['name'])[1].casefold() in MEDIA for f in media):raise AppError('NAME_UNCONFIRMED','未找到可改名的视频文件',409)
                 self.apply(owner,row['transfer_id'],plan['digest'])
             except AppError as e:
                 with self.store.transaction() as db:db.execute("UPDATE transfer_naming SET status='REVIEW',error=?,updated_at=? WHERE transfer_id=?",(e.message,time.time(),row['transfer_id']))

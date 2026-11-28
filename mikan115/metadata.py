@@ -173,7 +173,8 @@ class Metadata:
                     'profile_url':self.image(p.get('profile_path'),'w185')}
                     for p in (data.get('credits') or {}).get(group,[])[:40]] for group in ['cast','crew']},
                 'genres':[g['name'] for g in data.get('genres',[]) if g.get('name')],
-                'seasons':[],'episodes':[]}
+                'seasons':[],'episodes':[],
+                'known_seasons':[s['season_number'] for s in data.get('seasons') or [] if type(s.get('season_number')) is int]}
         series_title=result['title'] or result['title_original']
         if season is None or kind=='movie':
             result['tmdbTitle']=series_title

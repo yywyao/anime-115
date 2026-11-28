@@ -106,7 +106,7 @@ class ClosedLoop(Harness):
 
     def test_stable_release_batch_to_vps_library(self):
         self.bind()
-        status,queued,_=self.request('POST','/api/transfers',{'mikan_id':'236','release_ids':[HASH,HASH]})
+        status,queued,_=self.request('POST','/api/transfers',{'mikan_id':'236','release_ids':[HASH,HASH],'rules':{'rename':False}})
         self.assertEqual(status,202,queued)
         self.assertEqual(len(queued['tasks']),1)
         tid=queued['tasks'][0]['id']
@@ -115,6 +115,7 @@ class ClosedLoop(Harness):
         self.assertEqual(self.state.submit_count,1)
         self.state.complete()
         self.app.workflow.poll(tid)
+        self.app.layout.tick()
         status,available,_=self.request('GET',f'/api/tasks/{tid}/vps-download')
         self.assertEqual(status,200,available)
         self.assertTrue(available['available'])

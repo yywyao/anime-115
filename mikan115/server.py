@@ -27,6 +27,7 @@ from .workflow import Workflow
 from .metadata import Metadata
 from .sonarr import Sonarr
 from .organizer import Organizer
+from .cloud_layout import CloudLayout
 from .releases import VERSIONS
 
 
@@ -36,6 +37,7 @@ class Application:
         self.auth=Auth(self.store,config);self.alist=alist or Alist(config,self.store)
         self.workflow=Workflow(self.store,config,self.alist,**({'pan_factory':pan_factory} if pan_factory else {}))
         self.catalog=catalog or Catalog(self.store,config)
+        self.layout=CloudLayout(self.store,self.workflow,self.catalog);self.workflow.layout=self.layout
         self.metadata=getattr(self.catalog,'metadata',None) or Metadata(self.store)
         self.rss=RSS(self.store,config,self.catalog,self.workflow)
         self.sonarr=Sonarr(self.store,config=config);self.organizer=Organizer(self.store,self.workflow,self.catalog,self.sonarr)
@@ -50,7 +52,7 @@ class Application:
         self.rss.start()
         def run():
             while not self.stop_event.is_set():
-                try:self.workflow.tick();self.organizer.tick()
+                try:self.workflow.tick();self.organizer.tick();self.layout.tick()
                 except Exception:
                     # Never print provider exception bodies; they can contain account cookies.
                     print('Worker iteration failed; durable task state retained.',flush=True)
@@ -294,10 +296,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     try:tasks.append(self.app.library.enqueue(user,tid,{}))
                     except AppError as error:failed.append({'transfer_id':tid,'code':error.code,'message':error.message})
                 return self.send_json({'tasks':tasks,'failed':failed},202)
+            if path=='/api/library/resources':
+                if set(data)-{'mikan_id','release_ids','rules'}:raise AppError('INVALID_RELEASES','下载参数无效')
+                result=self.app.batch.selected(user,data.get('mikan_id'),data.get('release_ids'),data.get('rules'))
+                downloads=[self.app.library.request(user,task['id']) for task in result['tasks']]
+                return self.send_json({**result,'downloads':downloads},202)
             m=re.fullmatch(r'/api/tasks/([a-f0-9]{32})/vps-download',path)
             if m:
                 if set(data)-{'file_ids'}:raise AppError('INVALID_LIBRARY_FILES','请选择要下载的文件')
-                return self.send_json(self.app.library.enqueue(user,m[1],data),202)
+                return self.send_json(self.app.library.request(user,m[1],data),202)
             if path=='/api/transfers':
                 if set(data)&{'cid','folder_id','wp_path_id','path','mount_path','task_path','root_cid'}:raise AppError('FOLDER_OVERRIDE_FORBIDDEN','普通转存请求不能指定或改变目标目录',403)
                 if 'release_ids' in data:
@@ -311,7 +318,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     bid=str(data.get('bangumi_id') or (work_id if str(work_id).isdigit() else ''))
                     if bid.isdigit():
                         naming={'work_id':work_id,'bangumi_id':bid,'resource_hash':str(data.get('resource_hash') or '').lower(),
-                                'rules':{},'release':releases.parse(title)}
+                                'rules':releases.rules({}),'release':releases.parse(title)}
                 task=self.app.workflow.create(user,magnet,title,work_id,naming=naming)
                 return self.send_json({'success':True,'approval_required':False,'task':task},202)
             m=re.fullmatch(r'/api/transfers/([a-f0-9]{32})/(refresh|retry)',path)
