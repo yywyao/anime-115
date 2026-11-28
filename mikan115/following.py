@@ -130,7 +130,9 @@ class RSS:
     def prepare(self,body):
         if set(body)-{'rss_url','bangumi_id','subgroup_id','work_id','title','rules','include_existing'}:raise AppError('INVALID_FEED','追新包含不支持的字段')
         bid,sg,kind,path=self.source(body);rule=releases.rules(body.get('rules'))
-        if sg!='0' and not rule['group_ids']:rule['group_ids']=[sg]
+        if sg!='0':
+            if rule['group_ids'] and rule['group_ids']!=[sg]:raise AppError('FEED_GROUP_MISMATCH','字幕组 RSS 与追新字幕组不一致')
+            rule['group_ids']=[sg]
         work_id=str(body.get('work_id') or (bid if bid.isdigit() else ''))[:150] if kind=='bangumi' else ''
         if work_id:
             work=self.catalog.work(work_id)
@@ -160,6 +162,8 @@ class RSS:
     def public(self,row):
         out={k:row[k] for k in ['id','work_id','bangumi_id','subgroup_id','title','enabled','last_polled','last_error','source_kind','revision','user_id']}
         out['rules']=releases.rules(json.loads(row['rules_json']));out['username']=row.get('username','')
+        names={group['group_id']:group['name'] for group in self.store.all('SELECT group_id,name FROM work_groups WHERE bangumi_id=?',(row['bangumi_id'],))}
+        out['groups']=[{'id':ident,'name':names.get(ident,'字幕组 '+ident)} for ident in out['rules']['group_ids']]
         out['counts']={r['status']:r['n'] for r in self.store.all('SELECT status,count(*) n FROM subscription_releases WHERE subscription_id=? GROUP BY status',(row['id'],))}
         return out
 
@@ -184,10 +188,16 @@ class RSS:
         return self.settings()
 
     def update(self,user,sid,body):
-        self.authorize(user,sid)
+        current=self.authorize(user,sid)
         if set(body)-{'enabled','rules','title','remove'}:raise AppError('INVALID_RULES','修改包含不支持的字段')
         values={}
-        if 'rules' in body:values['rules_json']=json.dumps(releases.rules(body['rules']),ensure_ascii=False)
+        if 'rules' in body:
+            rule=releases.rules(body['rules'])
+            if current['subgroup_id']!='0':
+                if rule['group_ids'] and rule['group_ids']!=[current['subgroup_id']]:
+                    raise AppError('FEED_GROUP_MISMATCH','字幕组 RSS 与追新字幕组不一致')
+                rule['group_ids']=[current['subgroup_id']]
+            values['rules_json']=json.dumps(rule,ensure_ascii=False)
         if 'title' in body:values['title']=str(body['title'])[:300]
         if 'enabled' in body:
             if not isinstance(body['enabled'],bool):raise AppError('INVALID_RULES','开关无效')

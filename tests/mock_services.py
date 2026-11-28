@@ -27,6 +27,7 @@ class State:
         self.files={};self.storages={};self.metas={};self.tasks={};self.cloud={};self.next_cid=100;self.next_storage=1
         self.submit_count=0;self.calls=[];self.cookies=[];self.expired=False;self.malformed_submit=False
         self.fail_submit=False;self.bad_file_name=False;self.feed_hashes=[HASH];self.rss_items=None;self.rename_count=0;self.following_demo=False
+        self.resource_demo=False
 
     def mkdir(self,parent,name):
         for cid,f in self.folders.items():
@@ -154,6 +155,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 day=(datetime.datetime.now(ZoneInfo('Asia/Tokyo')).weekday()+1)%7
                 return self.html(f'<div class="sk-bangumi" data-dayofweek="{day}"><li data-bangumiid="236"><a class="an-text" title="测试动漫" href="/Home/Bangumi/236">测试动漫</a><img data-src="/test-poster.jpg"></li></div>')
             if path=='/Home/Bangumi/236':
+                if self.state.resource_demo:
+                    rows=[
+                        ('7','测试字幕组',[('a',1,'1080p','简日'),('b',2,'720p','简日'),('c',3,'1080p','简中'),('d',4,'1080p','繁日')]),
+                        ('8','第二字幕组',[('e',1,'1080p','简日'),('f',3,'1080p','简中')]),
+                    ]
+                    sections=[]
+                    for ident,name,entries in rows:
+                        items=''.join('<tr data-magnet="magnet:?xt=urn:btih:'+letter*40+'"><td><a class="magnet-link-wrap" href="/Home/Episode/'+letter*40+'">['+name+'] 动画 S02E'+str(episode).zfill(2)+' ['+resolution+']['+version+']</a></td><td>1 MB</td><td>2026/11/28</td></tr>' for letter,episode,resolution,version in entries)
+                        sections.append('<div class="subgroup-text" id="'+ident+'"><a class="text-muted">'+name+'</a><table>'+items+'</table></div>')
+                    return self.html('<p class="bangumi-title">测试动漫</p>'+''.join(sections))
                 extra='<div class="subgroup-text" id="8"><a class="text-muted">第二字幕组</a><table><tr><td><a class="magnet-link-wrap" href="/Home/Episode/'+('c'*40)+'">[第二字幕组] 测试动漫 - 01 [简繁日][1080p]</a></td></tr></table></div>' if self.state.following_demo else ''
                 return self.html('<p class="bangumi-title">测试动漫</p><div class="bangumi-poster" style="background-image: url(/test-poster.jpg)"></div><div class="subgroup-text" id="7"><a class="text-muted">测试字幕组</a><table><tr data-magnet="magnet:?xt=urn:btih:'+HASH+'"><td><a class="magnet-link-wrap" href="/Home/Episode/'+HASH+'">[测试字幕组] 测试动漫 - 01 [简日][1080p]</a></td><td>1 MB</td><td>2026/11/26</td></tr></table></div>'+extra)
             if path=='/Home/Search':return self.html('<a href="/Home/Bangumi/236"><span data-src="/test-poster.jpg"></span><div class="an-text" title="测试动漫"></div></a>')

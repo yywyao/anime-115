@@ -18,7 +18,7 @@ class Config:
     secure_cookie: bool = False
     setup_token: str = ''
     worker_interval: float = 5
-    rss_interval: int = 600
+    rss_interval: int = 60
     session_hours: int = 24
     catalog_auto_update: bool = False
     alist_managed: bool = False
@@ -43,7 +43,7 @@ class Config:
                    secure_cookie=os.environ.get('MIKAN_SECURE_COOKIE', '0') == '1',
                    setup_token=os.environ.get('MIKAN_SETUP_TOKEN', ''),
                    worker_interval=float(os.environ.get('MIKAN_WORKER_INTERVAL', '5')),
-                   rss_interval=max(60, int(os.environ.get('MIKAN_RSS_INTERVAL', '600'))),
+                   rss_interval=max(60, int(os.environ.get('MIKAN_RSS_INTERVAL', '60'))),
                    catalog_auto_update=os.environ.get('MIKAN_CATALOG_AUTO_UPDATE','1')=='1',
                    alist_managed=os.environ.get('ALIST_MANAGED','0')=='1',
                    sonarr_managed=os.environ.get('SONARR_MANAGED','0')=='1',

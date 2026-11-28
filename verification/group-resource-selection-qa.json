@@ -1,0 +1,51 @@
+{
+  "verified_utc": "2026-11-28T03:48:44.017453+00:00",
+  "windows_backend_tests": 178,
+  "frontend_tests": 10,
+  "browser": {
+    "success": true,
+    "scope": "Local HTTP fixtures with simulated Mikan RSS and cloud transfers.",
+    "results": [
+      {
+        "viewport": {
+          "width": 1440,
+          "height": 900
+        },
+        "combined_filters": true,
+        "group_select_all": true,
+        "hidden_selections_removed": true,
+        "library_selection_scope": true,
+        "group_specific_rss": true,
+        "automatic_future_release": true,
+        "other_groups_excluded": true,
+        "automatic_rss_import_preview": true,
+        "scheduler": "Initial due time advanced in an isolated fixture.",
+        "page_errors": 0
+      },
+      {
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "combined_filters": true,
+        "group_select_all": true,
+        "hidden_selections_removed": true,
+        "library_selection_scope": true,
+        "group_specific_rss": true,
+        "automatic_future_release": true,
+        "other_groups_excluded": true,
+        "automatic_rss_import_preview": true,
+        "scheduler": "Initial due time advanced in an isolated fixture.",
+        "page_errors": 0
+      }
+    ]
+  },
+  "public_source_preview": {
+    "public_resource_groups": 5,
+    "filtered_library_preview": true,
+    "selected_resource_scope": true,
+    "rss_preview": true,
+    "cloud_tasks_created": false
+  },
+  "real_cloud_tasks_created": false
+}

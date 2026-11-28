@@ -9,10 +9,18 @@ from mikan115.server import Application,Server,Handler
 from mikan115.store import Store
 from tests.mock_services import State,MockServer,LocalOnlyHTTP,COOKIE
 
-p=argparse.ArgumentParser();p.add_argument('--port',type=int,default=18788);p.add_argument('--test-account',action='store_true');p.add_argument('--fail-config-once',action='store_true');p.add_argument('--following-demo',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser()
+p.add_argument('--port',type=int,default=18788)
+p.add_argument('--test-account',action='store_true')
+p.add_argument('--fail-config-once',action='store_true')
+p.add_argument('--following-demo',action='store_true')
+p.add_argument('--resource-demo',action='store_true')
+a=p.parse_args()
 with tempfile.TemporaryDirectory(prefix='mikan115-ui-',dir=root.parent) as temp:
     state=State();mock=MockServer(state).start()
-    state.following_demo=a.following_demo
+    state.following_demo=a.following_demo or a.resource_demo
+    state.resource_demo=a.resource_demo
+    if a.resource_demo:state.rss_items=[]
     if a.following_demo:state.rss_items=[{'hash':'a'*40,'title':'[测试字幕组] 测试动漫 S02E01 [简日][1080p]'}]
     config=Config(root=root,data=pathlib.Path(temp),mikan_url=mock.base,alist_url=mock.base,
                   alist_password='artificial-alist-password',setup_token='ui-preview-setup-token',
@@ -41,8 +49,19 @@ with tempfile.TemporaryDirectory(prefix='mikan115-ui-',dir=root.parent) as temp:
             db.execute('INSERT INTO works VALUES(?,?,?,?,?,?,?)',(value['id'],'236',value['title'],2026,season,4,json.dumps(value,ensure_ascii=False)))
         db.commit();db.close()
         def finish_tasks():
+            published=False
             while not app.stop_event.wait(.5):
                 with state.lock:
+                    if a.resource_demo and not published and store.one('SELECT count(*) n FROM subscriptions WHERE removed=0')['n']>0:
+                        state.rss_items=[
+                            {'hash':'1'*40,'title':'[测试字幕组] 动画 S02E05 [简日][1080p]'},
+                            {'hash':'2'*40,'title':'[第二字幕组] 动画 S02E06 [简日][1080p]'},
+                            {'hash':'3'*40,'title':'[测试字幕组] 动画 S02E07 [简日][720p]'},
+                            {'hash':'4'*40,'title':'[测试字幕组] 动画 S02E08 [繁日][1080p]'},
+                        ]
+                        with store.transaction() as db:
+                            db.execute('UPDATE subscriptions SET last_polled=?',(time.time()-61,))
+                        published=True
                     if a.following_demo and store.one('SELECT count(*) n FROM subscriptions WHERE removed=0')['n']>0:
                         state.rss_items=[{'hash':'b'*40,'title':'[测试字幕组] 测试动漫 S02E02 [简日][1080p]'}, {'hash':'c'*40,'title':'[第二字幕组] 测试动漫 S02E02 [简中][1080p]'}, {'hash':'d'*40,'title':'[测试字幕组] 测试动漫 S02E02 [繁日][720p]'}]
                     state.complete()

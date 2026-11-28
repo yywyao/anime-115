@@ -50,8 +50,13 @@ class Batch:
         tasks = {}
         with self.workflow.connection_lock:
             for magnet, item in prepared:
-                metadata = {'release': item['release'], 'rules': rule, 'work_id': bid,
-                            'bangumi_id': bid, 'resource_hash': item['key']}
+                release=dict(item['release'])
+                sources=[{'group_id':source['release']['group_id'],'group':source['release']['group']}
+                         for source in item['sources']]
+                if len({source['group_id'] for source in sources})>1 and not rule['group_ids']:
+                    release.update(group_id='',group='')
+                metadata = {'release':release,'sources':sources,'rules':rule,'work_id':bid,
+                            'bangumi_id':bid,'resource_hash':item['key']}
                 task = self.workflow.create(user, magnet, item['title'], bid, enqueue_only=True, naming=metadata)
                 tasks[task['id']] = task
         return {'success': True, 'tasks': list(tasks.values())}
@@ -66,24 +71,31 @@ class Batch:
             grouped[item['key']] = {**item, 'sources': [item]}
         return grouped
 
-    def selected(self, user, bid, keys):
-        bid = self.source_id(bid)
+    @staticmethod
+    def release_ids(keys):
         if not isinstance(keys, list) or not 1 <= len(keys) <= 500 or any(
                 not isinstance(key, str) or not re.fullmatch('[a-f0-9]{40}', key) for key in keys):
             raise AppError('INVALID_RELEASES', '请选择要转存的资源')
+        return list(dict.fromkeys(keys))
+
+    def selected(self, user, bid, keys, rules=None):
+        bid = self.source_id(bid)
+        keys=self.release_ids(keys)
+        rule=releases.rules(rules)
         candidates = self.grouped(self.candidates(bid))
         chosen = []
-        for key in dict.fromkeys(keys):
+        for key in keys:
             item = candidates.get(key)
             if not item:
                 raise AppError('RESOURCE_NOT_FOUND', '资源已变化，请重新选择', 409)
-            if len({source['release']['group_id'] for source in item['sources']}) > 1:
-                item['release'] = releases.parse(item['title'])
-            chosen.append(item)
-        return self.queue(user, bid, chosen, releases.rules())
+            admitted=[source for source in item['sources'] if not releases.admit(source,{**rule,'allow_batches':True})]
+            if not admitted:raise AppError('RESOURCE_FILTER_MISMATCH','所选资源不符合当前筛选，请重新选择',409)
+            preferred=min(admitted,key=lambda source:releases.priority(source,rule))
+            chosen.append({**preferred,'sources':item['sources']})
+        return self.queue(user, bid, chosen, rule)
 
     def action(self, user, body):
-        if set(body) - {'mikan_id', 'action', 'rules', 'digest'}:
+        if set(body) - {'mikan_id', 'action', 'rules', 'digest', 'release_ids'}:
             raise AppError('INVALID_LIBRARY_ACTION', '操作参数无效')
         bid = self.source_id(body.get('mikan_id'))
         action = body.get('action')
@@ -91,6 +103,7 @@ class Batch:
             raise AppError('INVALID_LIBRARY_ACTION', '请选择入库操作')
         rule = releases.rules(body.get('rules'))
         rule['allow_batches'] = True
+        selected=set(self.release_ids(body['release_ids'])) if 'release_ids' in body else None
         if action == 'upgrade' and not any(rule[k] for k in ('group_ids', 'versions', 'resolutions')):
             raise AppError('UPGRADE_PREFERENCE_REQUIRED', '请选择优先使用的字幕组、字幕或分辨率')
         result = self.library.summary(user, [bid])
@@ -110,7 +123,11 @@ class Batch:
         candidates = []
         expected=status.get('expected_episodes')
         expected=set(expected) if isinstance(expected,list) else set()
-        for item in self.candidates(bid):
+        available=list(self.candidates(bid))
+        if selected and not selected<={item['key'] for item in available}:
+            raise AppError('RESOURCE_NOT_FOUND','所选资源已变化，请重新选择',409)
+        for item in available:
+            if selected is not None and item['key'] not in selected:continue
             eps = set(releases.normalized_episodes(item['release'], rule))
             if expected:eps &= expected
             if eps and all(0 < n <= 9999 for n in eps) and not releases.admit(item, rule):
@@ -122,7 +139,7 @@ class Batch:
             target = installed
 
         ordered = sorted(candidates, key=lambda item: releases.priority(item, rule))
-        grouped = self.grouped(candidates)
+        grouped = self.grouped(available)
         chosen = []
         outstanding = target.copy()
         owned = set(status.get('release_hashes', []))
@@ -138,7 +155,7 @@ class Batch:
 
         public = [{'release_id': item['key'], 'title': item['title'], 'episodes': sorted(item['episodes'])}
                   for item in chosen]
-        canonical = [user['id'], bid, action, rule, public, sorted(outstanding)]
+        canonical = [user['id'], bid, action, rule, public, sorted(outstanding),sorted(selected) if selected is not None else None]
         digest = hashlib.sha256(json.dumps(canonical, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
         if 'digest' in body:
             if digest != body['digest']:

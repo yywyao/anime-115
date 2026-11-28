@@ -1,18 +1,21 @@
 {
-  "verified_utc": "2026-11-28T03:12:21.728Z",
+  "verified_utc": "2026-11-28T03:47:44.249Z",
   "node": "v24.22.3",
   "platform": "win32",
   "success": true,
-  "tests_run": 6,
+  "tests_run": 10,
   "environment": "Artificial fetch responses only; no provider connection or real credentials.",
   "file_hashes": {
     "frontend/api.js": "99192bafef37c1499968301982c414a782c1fe9125588d9be2d11cda72607aa9",
     "frontend/api.test.mjs": "3b4a353178366888ae9d5df6d3d9f3bf17b0777cfbcea643fbc083533e7b9da8",
-    "frontend/components.jsx": "50aa9a8c20d2f2d677eae6011c917855ed0c44d670a87122d5470c3c1e53e257",
+    "frontend/components.jsx": "d5c3c7fc8a3476aa2baaac0db49a438eecd371e83760c95a7982c8f5315f37bf",
     "frontend/service-settings.jsx": "79309fa4ae00b8f36f04a56472538e309c7a8e59290cec8005c18f8cdbd7d6ca",
-    "frontend/tracking.jsx": "e4d46cf3ee688a2b648bf3ea7d86e2db76a953a44d49f2ab48951035cd922b05",
-    "frontend/review.css": "dd524deb8de3ffbe1223a83f2561c1cedc33899a326fc367a89fb93ea5a4a8ad",
+    "frontend/resources.jsx": "e6a6f2d30bd59e2645c2e956d90fc1a903966b9e7a622a630ec83b00dbe5f2e9",
+    "frontend/release-selection.js": "4206e73259ad94692dc9901381f855c0e885ad5d55c75fd63d04dcabc2440176",
+    "frontend/release-selection.test.mjs": "c7cd0b2aa7bbcc4f778c4b51e9f8cfffbef3a2bd4fccfc2dc722c5cf72a94481",
+    "frontend/tracking.jsx": "47b021173272268dda7ed00605cb51f2ba2ce7e512ebcfb6786fe2d0e162f160",
+    "frontend/review.css": "b2de4fb6a6250897fcc018bb8f44e0855f58ff6dbe9a48dd777ea382432c8c47",
     "frontend/shell.js": "d69a1d7c97f29395b49386e34f431def1930f29896b96fcdb1451b4d450e03ee",
-    "static/mikan115-ui.js": "7f9d9e234a3fd484d567cf3202afe1f250f5e66e5e95bd251cfb21e27f6d2e93"
+    "static/mikan115-ui.js": "66dad6489749066d53b206c64c02f02c3dcc1b6188b08df0a901b3d10f90da70"
   }
 }

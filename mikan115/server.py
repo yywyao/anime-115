@@ -301,8 +301,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if path=='/api/transfers':
                 if set(data)&{'cid','folder_id','wp_path_id','path','mount_path','task_path','root_cid'}:raise AppError('FOLDER_OVERRIDE_FORBIDDEN','普通转存请求不能指定或改变目标目录',403)
                 if 'release_ids' in data:
-                    if set(data)-{'mikan_id','release_ids'}:raise AppError('INVALID_RELEASES','批量转存参数无效')
-                    return self.send_json(self.app.batch.selected(user,data.get('mikan_id'),data['release_ids']),202)
+                    if set(data)-{'mikan_id','release_ids','rules'}:raise AppError('INVALID_RELEASES','批量转存参数无效')
+                    return self.send_json(self.app.batch.selected(user,data.get('mikan_id'),data['release_ids'],data.get('rules')),202)
                 naming=None
                 if data.get('magnet'):
                     magnet,title,work_id=data['magnet'],data.get('title',''),data.get('work_id','')
