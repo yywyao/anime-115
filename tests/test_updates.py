@@ -137,6 +137,19 @@ class UpdateSnapshots(unittest.TestCase):
         with self.assertRaises(AppError):self.updates.configure({'auto_update':'yes'})
         self.assertTrue(self.updates.configure({'auto_update':True})['auto_update'])
 
+    def test_anime_layout_blocks_incompatible_code_rollback_and_updates(self):
+        self.store.set_setting('library_directory_version','anime:private-library')
+        self.assertFalse(self.updates.layout_compatible(self.root))
+        module=self.root/'mikan115/library_paths.py';module.write_text("STORAGE_ROOT_NAME='anime'\n",encoding='utf-8')
+        self.assertTrue(self.updates.layout_compatible(self.root))
+        self.updates.stage()
+        with patch.object(self.updates,'status',return_value={'supervised':True}),self.assertRaises(AppError) as error:self.updates.request()
+        self.assertEqual(error.exception.code,'UPDATE_LAYOUT_INCOMPATIBLE')
+        self.assertFalse((self.updates.home/'request.json').exists())
+        atomic_json(self.updates.home/'current.json',{'version':'b'*40,'previous':{'version':'bundled'}})
+        with patch.dict(os.environ,{'MIKAN_BUNDLED_ROOT':str(self.root)}):
+            self.assertTrue(self.updates.status()['rollback_available'])
+
     def test_interrupted_activation_recovers_database_before_work_starts(self):
         supervisor=Supervisor(self.config);self.store.set_setting('protected_value','original');backup=supervisor.backup()
         self.store.set_setting('protected_value','partially migrated')

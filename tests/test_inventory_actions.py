@@ -75,7 +75,7 @@ class InventoryActions(Harness):
         self.app.library.tick()
         local=self.store.one('SELECT target_path FROM library_items')
         self.assertEqual(Path(local['target_path']).read_bytes(),PAYLOAD)
-        self.assertIn('mikan',Path(local['target_path']).parts)
+        self.assertIn('anime',Path(local['target_path']).parts)
         plan=self.app.batch.action(self.user,self.body('vps'))
         self.assertEqual(plan['owned_episodes'],[42])
         self.assertEqual(plan['selected_episodes'],[41])

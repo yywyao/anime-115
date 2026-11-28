@@ -60,6 +60,7 @@ class Inventory:
         return parsed
 
     def snapshot(self,user,ident,*,refresh=False):
+        self.library.migrate_root()
         context=self.context(ident);tasks=self._tasks(user,context);binding=self.store.binding(False)
         account=str(binding['account_uid']) if binding else 'unbound'
         cache_key=f'inventory:v1:{user["id"]}:{account}:{context["scope_key"]}'

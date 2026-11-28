@@ -15,6 +15,7 @@ import unicodedata
 
 from .errors import AppError
 from . import releases
+from .library_paths import migrate_library,STORAGE_ROOT_NAME
 
 
 _SCHEMA = '''
@@ -104,8 +105,8 @@ class Library:
         if series and series['status']=='PUBLISHED':
             name=str(series['series_name'])
             if self._safe_name(name).parts!=(name,):raise AppError('UNSAFE_LIBRARY_PATH','系列目录无效',409)
-            target=(self.root/'mikan'/name).resolve()
-        else:target=(self.root/'mikan'/'未分类'/task_id).resolve()
+            target=(self.root/STORAGE_ROOT_NAME/name).resolve()
+        else:target=(self.root/STORAGE_ROOT_NAME/'未分类'/task_id).resolve()
         if not target.is_relative_to(self.root):raise AppError('UNSAFE_LIBRARY_PATH','入库目录不安全',503)
         return target
 
@@ -183,6 +184,7 @@ class Library:
         return self.task(user,row['id'])
 
     def enqueue(self,user,tid,data=None,*,following=None):
+        self.migrate_root()
         data=data or {}
         if not isinstance(data,dict):raise AppError('LIBRARY_REQUEST_INVALID','入库参数不正确',400)
         if any(key in data for key in ('expected_episodes','target_path','name')):
@@ -379,12 +381,14 @@ class Library:
         return self.task(None,library_id)
 
     def run(self,library_id):
+        self.migrate_root()
         row=self._claim(library_id)
         if not row:return self.task(None,library_id)
         return self._process(row)
 
     def tick(self,limit=1):
         if self.store.setting('update_maintenance')=='1':return []
+        self.migrate_root()
         self.enqueue_requests()
         results=[]
         for _ in range(max(0,int(limit))):
@@ -427,6 +431,7 @@ class Library:
         return self.task(user,library_id)
 
     def summary(self,user,ids):
+        self.migrate_root()
         if not isinstance(ids,list):raise AppError('LIBRARY_IDS_INVALID','入库任务标识不正确',400)
         owner=self._user_id(user);requested=[str(value) for value in ids]
         rows=self.store.all('SELECT * FROM library_tasks ORDER BY created_at') if user.get('is_admin') else self.store.all('SELECT * FROM library_tasks WHERE owner_user_id=? ORDER BY created_at',(owner,))
@@ -458,3 +463,5 @@ class Library:
                         'expected_episodes':expected,'episode_count':len(expected),'aired_episodes':aired,'task_ids':[row['id'] for row in matches],
                         'release_hashes':sorted(hashes)}
         return {'items':items}
+
+    def migrate_root(self):return migrate_library(self)

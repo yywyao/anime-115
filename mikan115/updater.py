@@ -1,5 +1,6 @@
 """Verified incremental snapshots from the project's fixed public GitHub source."""
 import hashlib
+import ast
 import json
 import os
 from pathlib import Path,PurePosixPath
@@ -91,11 +92,27 @@ class Updates:
         state=self.state();heartbeat=read_json(self.home/'supervisor.json')
         supervised=os.environ.get('MIKAN_SUPERVISED')=='1' and heartbeat.get('heartbeat',0)>time.time()-20
         current=read_json(self.home/'current.json')
+        previous=(current.get('previous') or {}).get('version')
+        previous_root=self.previous_root(previous)
         return {key:state.get(key) for key in ('phase','latest','checked_at','changed_files','downloaded_files','reused_files','error')}|{
             'current':os.environ.get('MIKAN_RUNNING_VERSION') or current.get('version') or 'bundled',
             'repository':'https://github.com/'+REPOSITORY,'branch':BRANCH,'available':bool(state.get('available')),
-            'staged':state.get('staged'),'supervised':supervised,'rollback_available':bool(current.get('previous') and current['previous'].get('version')!=current.get('version')),
+            'staged':state.get('staged'),'supervised':supervised,'rollback_available':bool(previous and previous!=current.get('version') and self.layout_compatible(previous_root)),
             'auto_check':self.store.setting('update_auto_check','1')=='1','auto_update':self.store.setting('update_auto_apply','0')=='1'}
+
+    def layout_compatible(self,root):
+        binding=self.store.binding(False)
+        if not ((binding and binding['root_name']=='anime') or self.store.setting('cloud_directory_version')=='2' or self.store.setting('library_directory_version','').startswith('anime:')):return True
+        if root is None:return False
+        try:tree=ast.parse((Path(root)/'mikan115/library_paths.py').read_bytes())
+        except (OSError,SyntaxError):return False
+        return any(isinstance(node,ast.Assign) and isinstance(node.value,ast.Constant) and node.value.value=='anime' and
+            any(isinstance(target,ast.Name) and target.id=='STORAGE_ROOT_NAME' for target in node.targets) for node in tree.body)
+
+    def previous_root(self,version):
+        if version and re.fullmatch('[a-f0-9]{40}',version):return self.home/'versions'/version
+        if version=='bundled' and os.environ.get('MIKAN_BUNDLED_ROOT'):return Path(os.environ['MIKAN_BUNDLED_ROOT'])
+        return None
 
     def manifest(self):
         try:commit=self.http.json('GET',API+'/commits/'+BRANCH)
@@ -204,10 +221,13 @@ class Updates:
             if rollback:
                 version=(current.get('previous') or {}).get('version')
                 if not version:raise AppError('UPDATE_NO_ROLLBACK','没有可恢复的版本',409)
+                root=self.previous_root(version)
+                if not self.layout_compatible(root):raise AppError('UPDATE_LAYOUT_INCOMPATIBLE','旧版本不支持 anime 目录，请使用兼容版本',409)
             else:
                 version=self.state().get('staged')
                 if not version:raise AppError('UPDATE_NOT_STAGED','请先下载更新',409)
                 self.verify(self.home/'versions'/version)
+                if not self.layout_compatible(self.home/'versions'/version):raise AppError('UPDATE_LAYOUT_INCOMPATIBLE','此版本不支持 anime 目录，请使用兼容版本',409)
             self.store.set_setting('update_maintenance','1')
             atomic_json(self.home/'request.json',{'kind':'rollback' if rollback else 'apply','version':version,'created_at':time.time()})
             self.write(phase='waiting',error=None)

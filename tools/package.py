@@ -18,8 +18,8 @@ for f in sorted(root.rglob('*')):
            or any(marker in f.name.lower() for marker in ('.sqlite-','.sqlite3-','.db-'))):continue
     files.append(f)
 required=['AGENTS.md','README.md','docs/usage.md','.env.example','run.py','tools/start.py','mikan115/server.py','mikan115/metadata.py',
-          'mikan115/magnet_import.py','frontend/magnet-import.jsx','mikan115/inventory.py','mikan115/feed_sources.py','mikan115/tracking_catalog.py','mikan115/updater.py','mikan115/supervisor.py','frontend/update-settings.jsx','frontend/follow-dialog.jsx','frontend/collection-plan.js','mikan115/library.py','mikan115/batch.py','mikan115/cloud_layout.py','mikan115/mikan_parser.py','frontend/components.jsx','frontend/service-settings.jsx',
-          'frontend/resources.jsx','frontend/release-selection.js',
+          'mikan115/magnet_import.py','frontend/magnet-import.jsx','mikan115/inventory.py','mikan115/feed_sources.py','mikan115/tracking_catalog.py','mikan115/updater.py','mikan115/supervisor.py','frontend/update-settings.jsx','frontend/follow-dialog.jsx','frontend/collection-plan.js','mikan115/library_paths.py','mikan115/library.py','mikan115/batch.py','mikan115/cloud_layout.py','mikan115/mikan_parser.py','frontend/components.jsx','frontend/service-settings.jsx',
+          'frontend/connection-settings.jsx','frontend/resources.jsx','frontend/release-selection.js',
           'frontend/review.css','templates/index.html','static/mikan115-ui.js','static/assets/mikan115-app.js',
           'seed/catalog.sqlite','seed/tmdb-logo-scopes.json','static/provider-logos/tmdb-official.svg',
           'static/provider-logos/bangumi-official.png','static/provider-logos/mal-official.svg','compose.yaml','requirements.txt']

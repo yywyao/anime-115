@@ -297,6 +297,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 allowed={'cookie','cookie_source','alist_password','alist_token'}
                 if set(data)-allowed:raise AppError('INVALID_CONNECTION_FIELDS','连接设置包含不允许的字段')
                 return self.send_json(self.app.workflow.bind(data.get('cookie',''),cookie_source=data.get('cookie_source'),alist_password=data.get('alist_password',''),alist_token=data.get('alist_token','')))
+            if path=='/api/settings/connection/verify':
+                self.session(admin=True)
+                if set(data)-{'cookie','cookie_source'}:raise AppError('INVALID_CONNECTION_FIELDS','CK 设置无效')
+                return self.send_json(self.app.workflow.verify_cookie(data.get('cookie',''),cookie_source=data.get('cookie_source','third_party')))
+            if path=='/api/settings/connection/directory':
+                self.session(admin=True)
+                if set(data)!={'name'}:raise AppError('INVALID_CONNECTION_FIELDS','目录设置无效')
+                return self.send_json(self.app.workflow.configure_directory(data['name']))
             if path=='/api/settings/metadata':
                 self.session(admin=True)
                 if set(data)-{'tmdb_credential','clear_tmdb'}:raise AppError('INVALID_METADATA_FIELDS','设置无效')

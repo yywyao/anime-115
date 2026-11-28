@@ -54,7 +54,7 @@ class SeriesLayout(Harness):
         self.assertEqual(layout['series_name'],'动画')
         self.assertNotIn(stage['task_cid'],self.state.folders)
         self.assertEqual(self.state.folders[layout['series_cid']]['parent'],self.store.binding()['root_cid'])
-        self.assertEqual(self.store.binding()['root_name'],'mikan')
+        self.assertEqual(self.store.binding()['root_name'],'anime')
         file=self.store.one('SELECT * FROM transfer_files WHERE transfer_id=?',(tid,))
         self.assertEqual(file['name'],'动画 - S02E01 [甲组] [简日] [1080p].mp4')
         self.assertTrue(file['path'].endswith('/动画/'+file['name']))
@@ -62,7 +62,7 @@ class SeriesLayout(Harness):
         local=self.app.library.task(self.user,tid)
         self.assertEqual(local['status'],'complete',local)
         item=self.store.one('SELECT target_path FROM library_items')
-        self.assertEqual(Path(item['target_path']).relative_to(self.app.library.root).parts,('mikan','动画',file['name']))
+        self.assertEqual(Path(item['target_path']).relative_to(self.app.library.root).parts,('anime','动画',file['name']))
         self.assertEqual(hashlib.sha256(Path(item['target_path']).read_bytes()).digest(),hashlib.sha256(PAYLOAD).digest())
         self.assertEqual(self.state.submit_count,1)
         self.queue(vps=True);self.app.library.tick()
@@ -88,7 +88,7 @@ class SeriesLayout(Harness):
         second_root=self.store.one('SELECT root_path FROM library_tasks WHERE id=?',(second_local['task_id'],))['root_path']
         self.assertEqual(first_root,second_root)
         self.app.library.tick(2)
-        self.assertEqual(len(list((self.app.library.root/'mikan'/'动画').glob('*.mp4'))),2)
+        self.assertEqual(len(list((self.app.library.root/'anime'/'动画').glob('*.mp4'))),2)
 
     def test_timeout_after_move_reconciles_same_file_id_after_restart(self):
         tid=self.queue(vps=True);self.finish(tid)
@@ -134,13 +134,13 @@ class SeriesLayout(Harness):
         b=self.store.binding();old='Mikan115-Transfers-'+self.store.instance_id[:8]
         self.state.folders[b['root_cid']]['name']=old
         with self.store.transaction() as db:db.execute('UPDATE binding SET root_name=?',(old,))
-        other=self.state.mkdir('0','mikan')
+        other=self.state.mkdir('0','anime')
         with self.assertRaises(AppError) as error:self.app.workflow.scope()
         self.assertEqual(error.exception.code,'CLOUD_ROOT_CONFLICT')
         self.assertEqual(self.state.folders[b['root_cid']]['name'],old)
         self.state.folders[other]['name']='私人文件'
         self.app.workflow.scope()
-        self.assertEqual(self.state.folders[b['root_cid']]['name'],'mikan')
+        self.assertEqual(self.state.folders[b['root_cid']]['name'],'anime')
         self.assertEqual(self.state.folders[other]['name'],'私人文件')
 
     def test_directory_creation_timeout_recovers_marker_without_duplicate_series(self):
@@ -150,7 +150,7 @@ class SeriesLayout(Harness):
             pan=factory(cookie);create=pan.create_folder
             def interrupted(parent,name):
                 cid=create(parent,name)
-                if name.startswith('.mikan-') and once[0]:
+                if name.startswith('.anime-') and once[0]:
                     once[0]=False;raise AppError('TEST_TIMEOUT','测试中断',503,uncertain=True)
                 return cid
             pan.create_folder=interrupted
@@ -248,7 +248,7 @@ class SeriesLayout(Harness):
     def test_shared_local_series_never_adopts_an_untracked_equal_size_file(self):
         tid=self.queue();self.finish(tid);self.app.layout.tick()
         file=self.store.one('SELECT * FROM transfer_files')
-        target=self.app.library.root/'mikan'/'动画'/file['name'];target.parent.mkdir(parents=True)
+        target=self.app.library.root/'anime'/'动画'/file['name'];target.parent.mkdir(parents=True)
         target.write_bytes(b'x'*file['size'])
         with self.assertRaises(AppError) as error:self.app.library.enqueue(self.user,tid)
         self.assertEqual(error.exception.code,'LIBRARY_FILE_CONFLICT')

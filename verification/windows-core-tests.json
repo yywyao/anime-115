@@ -1,7 +1,7 @@
 {
-  "verified_utc": "2026-11-28T06:52:34.494447+00:00",
+  "verified_utc": "2026-11-28T10:51:41.910621+00:00",
   "python": "3.12.14",
-  "tests_run": 237,
+  "tests_run": 258,
   "success": true,
   "cases": [
     {
@@ -286,6 +286,10 @@
     },
     {
       "name": "tests.test_feed_sources.SharedFollowing.test_home_queue_race_does_not_duplicate_external_rss_episode",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.SharedFollowing.test_saved_external_group_uses_its_name_instead_of_internal_id",
       "result": "passed"
     },
     {
@@ -701,6 +705,70 @@
       "result": "passed"
     },
     {
+      "name": "tests.test_root_migration.CloudRootMigration.test_cloud_rename_timeout_reconciles_without_repeating_the_rename",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.CloudRootMigration.test_cloud_root_keeps_same_id_files_and_alist_storage",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.CloudRootMigration.test_expired_cookie_waits_for_settings_update_before_retrying",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.CloudRootMigration.test_external_rename_without_durable_intent_is_not_silently_adopted",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.CloudRootMigration.test_unrelated_anime_directory_is_never_adopted",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.DirectorySettings.test_ck_verification_is_read_only_and_directory_is_a_separate_step",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.DirectorySettings.test_default_name_conflict_does_not_invalidate_ck_or_adopt_private_files",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.DirectorySettings.test_directory_requires_verified_cookie_and_rejects_paths_and_extra_fields",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.DirectorySettings.test_explicit_name_edit_preserves_existing_root_and_recovers_external_rename",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.DirectorySettings.test_invalid_cookie_cannot_be_marked_verified_or_create_a_directory",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.DirectorySettings.test_missing_bound_directory_does_not_prevent_ck_verification",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.LocalRootMigration.test_active_download_and_update_health_check_defer_migration",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.LocalRootMigration.test_existing_files_and_database_paths_migrate_without_redownloading",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.LocalRootMigration.test_existing_foreign_target_is_not_merged_or_overwritten",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.LocalRootMigration.test_interrupted_rename_recovers_same_directory_and_updates_old_records",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_root_migration.LocalRootMigration.test_target_created_during_rename_is_not_replaced_even_when_empty",
+      "result": "passed"
+    },
+    {
       "name": "tests.test_service_connections.ServiceConnections.test_automatic_alist_gets_and_renews_its_token_without_ck",
       "result": "passed"
     },
@@ -769,6 +837,14 @@
       "result": "passed"
     },
     {
+      "name": "tests.test_updates.UpdateSnapshots.test_anime_layout_blocks_incompatible_code_rollback_and_updates",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_atomic_status_replace_retries_transient_file_sharing_conflict",
+      "result": "passed"
+    },
+    {
       "name": "tests.test_updates.UpdateSnapshots.test_bad_hash_and_truncated_manifest_never_become_ready",
       "result": "passed"
     },
@@ -778,6 +854,10 @@
     },
     {
       "name": "tests.test_updates.UpdateSnapshots.test_failed_start_restores_partial_database_changes_and_previous_code",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_github_api_rate_limit_uses_pinned_public_release_manifest",
       "result": "passed"
     },
     {
@@ -964,15 +1044,16 @@
     "mikan115/batch.py": "9e6ec286d57e59fe08fc1959b05baee358ef0b8b9825dda465b3225afbb3451c",
     "mikan115/catalog.py": "5276c72bfdae34ddebe59be2b7a958d6a849994d679d19d95df3a003f87625fa",
     "mikan115/catalog_sync.py": "65c5e36dacb06fbd223d2ebaae8759bde79240048fd03baa8a8d0c3c63738fd9",
-    "mikan115/cloud_layout.py": "e7f518159e4607235f43c5efe8fa640dc68e01e2b603cb37e6d79fb2f4ec016f",
+    "mikan115/cloud_layout.py": "95c1362db78dab46831e923232fb233b7ee39e33e2ff5cdb99573e999a7359d3",
     "mikan115/config.py": "e7fc7a2fbfc857321a03739a0cd42818442feb44fff32b1ebb4839b91dc1e36e",
     "mikan115/errors.py": "0d16ff3d29664623429e5e4ea2f66962765e6a6410afe38879a8f7d530d025a6",
     "mikan115/feed_matching.py": "c747619b8315e17b8f70a5c7ad19c321fba3209b7c14ee35f4483bd2b0d3b90d",
     "mikan115/feed_sources.py": "535aa3ce37c7af4db1670ca8cf3b37492766343130c88d093d8f76181f517400",
-    "mikan115/following.py": "6c6fbe99b69592ca5dd8df515aa01c97142f39e6dd7d60a9951bcdf79a1b0658",
+    "mikan115/following.py": "58b7155cd0b444f7aacd168c957b377e79e6a03041a97810c3fb8c3a2360e0df",
     "mikan115/http_client.py": "7624434c4bf47476720c0a491adeccf295c1c70592bb414deda339dded95c7a9",
-    "mikan115/inventory.py": "8e3aca1c959c6cd8f3fd5442377a4b975ae1c6d537f429c974583f8640ab5b9d",
-    "mikan115/library.py": "9a1bd7d02df4435afd391887118217c756f47b782a7ac7096b9d59d1c6e0f58a",
+    "mikan115/inventory.py": "dcbb5e5c13bea7d1e5c8e84487d823397f38261dd6d0713eb407f620bf9d9403",
+    "mikan115/library.py": "598b1c9517ec517186fd31aa9e97b44fd9fdc025aab77356ead5bafda96be494",
+    "mikan115/library_paths.py": "9653e0511935f35c8d8e93f4eeec9e46cada3cecc37a66eab485305496f7f0bb",
     "mikan115/magnet_import.py": "b484d5db9aaa48fd34934270d38784ebc87d5b63f81ba5b5445cee78cbb17615",
     "mikan115/metadata.py": "b215d78e9168c5dcf3cc969c8f74b70ed9d5cb64b3fe5dfc963ba1ea3e088c24",
     "mikan115/mikan_parser.py": "f65d3c9e95b8e63ec2befee55b7b68be212f4ee52d7dcc476f12b597cb985456",
@@ -983,16 +1064,16 @@
     "mikan115/releases.py": "38586e2c2fb662394c09dd40f5b82f2c07f800b26fb52f30a46355c3a111e6ff",
     "mikan115/rss.py": "11cbcb3dc0bdc2f35e38205f386d6c0a97908d7f2e5c61a2ecb9efdb99eda749",
     "mikan115/search.py": "8f017a8e5669a43bedad32dd6b3d99a0fcb5ce31d803db892044c2fb2868fc56",
-    "mikan115/server.py": "d8f1dc6fc56810c69234ee5b46e905b75cef4f094696348720f3517ac2131a1a",
+    "mikan115/server.py": "4b89dd5761b4c607dce45e6b00918dbfe0a42b26c0f1d571cc20a4818264d5e1",
     "mikan115/sonarr.py": "4107512ae13b988245d01ee76d217bb5c353659410e44f2268a10ae1676c7b2b",
     "mikan115/store.py": "5a4fe31ccc101718e18080770921bda21a14f8855235bb9f0c5bf2f8cca3e615",
-    "mikan115/supervisor.py": "f42f5673e5ff6c6ce18d0cde8411d26b7e3493c8ad40c14745e261af831daa36",
+    "mikan115/supervisor.py": "2743c856306461a805a6e75e1292694a5337330ccc7e99e5e85f5bc805d6e98a",
     "mikan115/torrent.py": "c823fa17b1ed208bee27b0382096b8b11d3fa8640aa494fe0d2e11ef955cc85d",
     "mikan115/tracking_catalog.py": "32a432c0801d4c4c91d315b34d1cf1a465f7275648957ebff99d55c0190706da",
-    "mikan115/updater.py": "6be40a02290dd3c1f8e0331771df9ab85aa6a5c9a193dbc649caae4f14d5ff24",
-    "mikan115/workflow.py": "4bf26a41865daabe0597e405536d5f05f636f6c41ad93de4c6d3f812b9adad06",
+    "mikan115/updater.py": "d4b5b05e3e21a03d76921ab1a23575668c2e125cc3277e098056b989278d8136",
+    "mikan115/workflow.py": "a5a045003082a407749c3da0c446d57b0d1a22dd3b38a2ebb878ed14b21ebbac",
     "mikan115/__init__.py": "76cc8c988f15dfe1edb00c35815cba83409b22cb00ba60e592a90e16b11ad8b4",
     "static/assets/mikan115-app.js": "914ae28a12936f2489e53c4ffc0dc4b154fae793999afe408e4f9767987913af",
-    "static/mikan115-ui.js": "0d004826a47f9568cc5c49ef01bbb7e92cc38cebd8c890389c9063758703c068"
+    "static/mikan115-ui.js": "bed4395849699eadf0e2ad7829472194b81640871eb8b0cb96af67afda2eb6ca"
   }
 }

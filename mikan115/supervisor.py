@@ -40,6 +40,7 @@ class Supervisor:
     def spawn(self,version):
         root=self.root(version);self.boot_id=secrets.token_hex(16);self.control()
         env={**os.environ,'MIKAN_SUPERVISED':'1','MIKAN_BOOT_ID':self.boot_id,'MIKAN_RUNNING_VERSION':version,
+             'MIKAN_BUNDLED_ROOT':str(self.config.root.resolve()),
              'MIKAN_DATA_DIR':str(self.config.data.resolve()),'PYTHONDONTWRITEBYTECODE':'1','PYTHONUNBUFFERED':'1'}
         self.child=subprocess.Popen([sys.executable,str(root/'run.py'),'--serve-child'],cwd=root,env=env,
             **({'creationflags':subprocess.CREATE_NO_WINDOW} if os.name=='nt' else {}))

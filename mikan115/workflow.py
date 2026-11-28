@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 import posixpath
 import re
@@ -9,6 +10,7 @@ import urllib.parse
 
 from .errors import AppError,ProviderError
 from .pan115 import Pan115,normalize_cookie
+from .cloud_layout import root_name
 
 
 ACTIVE={'NEW','SUBMITTING','SUBMIT_UNKNOWN','CLOUD_DOWNLOADING','WAITING_FILES','AUTH_REQUIRED'}
@@ -53,11 +55,15 @@ class Workflow:
     def connection_status(self):
         b=self.store.binding(False)
         pending=bool(self.store.setting('pending_115_cookie'))
+        identity=json.loads(self.store.decrypt(self.store.setting('verified_115_identity'))) if self.store.setting('verified_115_identity') else {}
         alist=self.alist.status()
         return {'configured':bool(b or pending),'ready':bool(b and b['ready']),
-                'account_uid':b['account_uid'] if b else None,
-                'account_name':b['account_name'] if b else None,
+                'account_uid':identity.get('uid') or (b['account_uid'] if b else None),
+                'account_name':identity.get('name') or (b['account_name'] if b else None),
                 'transfer_folder':b['root_name'] if b else None,
+                'directory_name':self.store.setting('cloud_root_name','anime'),
+                'cookie_verified':self.cookie_verified(),
+                'cookie_error':self.store.setting('cookie_error') or None,
                 'alist_mount':b['mount_path'] if b else None,
                 'cookie_source':self.store.setting('cookie_source','third_party'),
                 'cookie_configured':bool(b or pending),'auto_relogin':False,'qr_login_enabled':False,
@@ -65,6 +71,51 @@ class Workflow:
                 'connection_error':self.store.setting('connection_error') or None,
                 'connection_error_code':self.store.setting('connection_error_code') or None,
                 'alist_url':alist['url']}
+
+    def cookie_verified(self):
+        b=self.store.binding(False);saved=self.store.setting('pending_115_cookie') or (b and b['cookie_encrypted'])
+        if not saved or self.store.setting('cookie_error') or self.store.setting('connection_error_code')=='COOKIE_EXPIRED':return False
+        return hashlib.sha256(self.store.decrypt(saved).encode()).hexdigest()==self.store.setting('verified_115_fingerprint')
+
+    def _verify_cookie(self,cookie,cookie_source):
+        prior=self.store.binding(False)
+        saved=self.store.setting('pending_115_cookie') or (prior and prior['cookie_encrypted'])
+        if not cookie and not saved:raise AppError('COOKIE_REQUIRED','请输入 115 CK')
+        cookie=normalize_cookie(cookie or self.store.decrypt(saved));pan=self.pan_factory(cookie);identity=pan.identity()
+        if prior and prior['account_uid']!=identity['uid']:
+            if self.store.one("SELECT 1 FROM transfers WHERE state NOT IN ('FILES_READY','FAILED','CANCELED') LIMIT 1"):
+                raise AppError('ACCOUNT_HAS_ACTIVE_TASKS','仍有未结束的任务，不能切换 115 账号',409)
+            raise AppError('ACCOUNT_SWITCH_REQUIRES_NEW_INSTANCE','请为其他 115 账号使用新的数据目录',409)
+        with self.store.transaction() as db:
+            for key,value in [('pending_115_cookie',self.store.encrypt(cookie)),('cookie_source',cookie_source),
+                              ('verified_115_identity',self.store.encrypt(json.dumps(identity))),
+                              ('verified_115_fingerprint',hashlib.sha256(cookie.encode()).hexdigest())]:
+                db.execute('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,value))
+            expired=db.execute("SELECT value FROM settings WHERE key='connection_error_code'").fetchone()
+            db.execute("DELETE FROM settings WHERE key='cookie_error'")
+            if expired and expired['value']=='COOKIE_EXPIRED':db.execute("DELETE FROM settings WHERE key IN ('connection_error','connection_error_code')")
+        return prior,pan,identity,cookie
+
+    def verify_cookie(self,cookie='',*,cookie_source='third_party'):
+        if not isinstance(cookie,str) or cookie_source not in {'third_party','existing_session'}:raise AppError('INVALID_CONNECTION_FIELDS','CK 格式不正确')
+        if self.store.setting('update_maintenance')=='1':raise AppError('UPDATE_IN_PROGRESS','更新中，请稍后再试',503)
+        with self.connection_lock:
+            try:self._verify_cookie(cookie,cookie_source)
+            except AppError as error:
+                self.store.set_setting('cookie_error',error.message);raise
+            self.store.set_setting('connection_directory_pending','1')
+            with self.store.transaction() as db:db.execute('UPDATE binding SET ready=0 WHERE id=1')
+            return self.connection_status()
+
+    def configure_directory(self,name):
+        name=root_name(name)
+        if self.store.setting('update_maintenance')=='1':raise AppError('UPDATE_IN_PROGRESS','更新中，请稍后再试',503)
+        with self.connection_lock:
+            if not self.cookie_verified():raise AppError('COOKIE_VERIFICATION_REQUIRED','请先验证 CK',409)
+            try:return self._bind('',self.store.setting('cookie_source','third_party'),'','',directory=name)
+            except AppError as error:
+                with self.store.transaction() as db:db.execute('UPDATE binding SET ready=0 WHERE id=1')
+                self.store.set_setting('connection_error',error.message);self.store.set_setting('connection_error_code',error.code);raise
 
     def configure_alist(self,body):
         with self.connection_lock:
@@ -91,40 +142,32 @@ class Workflow:
             try:
                 return self._bind(cookie,cookie_source,alist_password,alist_token)
             except AppError as error:
+                with self.store.transaction() as db:db.execute('UPDATE binding SET ready=0 WHERE id=1')
                 self.store.set_setting('connection_error',error.message)
                 self.store.set_setting('connection_error_code',error.code)
                 raise
 
-    def _bind(self,cookie,cookie_source,alist_password,alist_token):
-        prior=self.store.binding(False)
-        saved=self.store.setting('pending_115_cookie') or (prior and prior['cookie_encrypted'])
-        if not cookie and not saved:raise AppError('COOKIE_REQUIRED','请输入 115 CK')
-        cookie=normalize_cookie(cookie or self.store.decrypt(saved))
-        pan=self.pan_factory(cookie)
-        identity=pan.identity()
+    def _bind(self,cookie,cookie_source,alist_password,alist_token,*,directory=None):
+        prior,pan,identity,cookie=self._verify_cookie(cookie,cookie_source)
         uid=identity['uid']
-        if prior and prior['account_uid']!=uid:
-            count=self.store.one("SELECT count(*) AS n FROM transfers WHERE state NOT IN ('FILES_READY','FAILED','CANCELED')")['n']
-            if count:raise AppError('ACCOUNT_HAS_ACTIVE_TASKS','仍有未结束的任务，不能切换 115 账号',409)
-            raise AppError('ACCOUNT_SWITCH_REQUIRES_NEW_INSTANCE','请为其他 115 账号使用新的数据目录',409)
         encrypted=self.store.encrypt(cookie)
-        self.store.set_setting('pending_115_cookie',encrypted)
-        self.store.set_setting('cookie_source',cookie_source)
         if alist_password or alist_token:
             self.store.set_setting('alist_credentials',self.store.encrypt(json.dumps({'password':alist_password,'token':alist_token})))
             self.alist.reset_auth_cache()
         self.alist.preflight()
-        name=prior['root_name'] if prior else 'mikan'
+        name=root_name(directory if directory is not None else self.store.setting('cloud_root_name','anime'))
         mount='/mikan115-'+self.store.instance_id[:8]
         if prior:
             cid=prior['root_cid']
             if self.layout:
-                prior=self.layout.root(pan,prior);name=prior['root_name']
+                prior=self.layout.root(pan,prior,target=name,allow_current=directory is not None);name=prior['root_name']
             else:pan.verify_child('0',cid,name)
         else:
-            matches=[f for f in pan.list_files('0') if not f.get('fid') and str(f.get('n') or f.get('name') or '')==name]
-            if matches:raise AppError('DEDICATED_FOLDER_ALREADY_EXISTS','此实例的专用目录缺少配套记录，请检查数据目录',409)
+            from .cloud_layout import normalized
+            matches=[f for f in pan.list_files('0') if normalized(str(f.get('n') or f.get('name') or ''))==normalized(name)]
+            if matches:raise AppError('DEDICATED_FOLDER_ALREADY_EXISTS','目录名称已被使用，请换一个名称',409)
             cid=pan.create_folder('0',name)
+            self.store.set_setting('cloud_root_name',name)
         with self.store.transaction() as c:
             c.execute('''INSERT INTO binding VALUES(1,?,?,?,?,?,?,?,0,?)
                 ON CONFLICT(id) DO UPDATE SET account_name=excluded.account_name,
@@ -135,7 +178,8 @@ class Workflow:
         self.alist.list_files(mount)
         with self.store.transaction() as c:
             c.execute('UPDATE binding SET storage_id=?,ready=1,updated_at=? WHERE id=1',(sid,time.time()))
-            c.execute("DELETE FROM settings WHERE key IN ('pending_115_cookie','connection_error','connection_error_code')")
+            c.execute("DELETE FROM settings WHERE key IN ('pending_115_cookie','connection_error','connection_error_code','connection_directory_pending','cookie_error')")
+            c.execute("INSERT INTO settings VALUES('cloud_directory_version','2') ON CONFLICT(key) DO UPDATE SET value=excluded.value")
         return self.connection_status()
 
     def reconcile_connection(self):
@@ -144,6 +188,7 @@ class Workflow:
         if now<self.next_connection_check:return
         self.next_connection_check=now+60
         with self.connection_lock:
+            if self.store.setting('connection_directory_pending')=='1':return
             pending=self.store.setting('pending_115_cookie')
             b=self.store.binding(False)
             if not b and not pending:return
@@ -168,7 +213,7 @@ class Workflow:
             raise AppError('TASK_ACCOUNT_MISMATCH','任务所属账号与当前连接不一致',409)
         cookie=self.store.decrypt(b['cookie_encrypted'])
         pan=self.pan_factory(cookie)
-        if self.layout and b['root_name']!='mikan':b=self.layout.root(pan,b)
+        if self.layout and b['root_name']!=self.store.setting('cloud_root_name','anime'):b=self.layout.root(pan,b)
         pan.verify_child('0',b['root_cid'],b['root_name'])
         self.alist.assert_scope(b['storage_id'],b['root_cid'],b['mount_path'],self.marker(b['account_uid']),b['account_uid'],cookie)
         if task and task.get('task_cid'):
@@ -414,6 +459,14 @@ class Workflow:
     def tick(self):
         self.reconcile_connection()
         if self.store.setting('update_maintenance')=='1':return
+        binding=self.store.binding(False)
+        if binding and binding['ready'] and self.layout and binding['root_name']!=self.store.setting('cloud_root_name','anime'):
+            if self.store.setting('connection_error_code')=='COOKIE_EXPIRED':return
+            try:
+                with self.connection_lock:self.scope()
+                with self.store.transaction() as db:db.execute("DELETE FROM settings WHERE key IN ('connection_error','connection_error_code')")
+            except AppError as error:
+                self.store.set_setting('connection_error',error.message);self.store.set_setting('connection_error_code',error.code);return
         # Persisted NEW tasks are safe to claim after a restart. An interrupted
         # SUBMITTING task is ambiguous and must never be silently sent again.
         with self.store.transaction() as c:

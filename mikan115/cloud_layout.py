@@ -31,6 +31,14 @@ CREATE TABLE IF NOT EXISTS cloud_outputs (
 def normalized(name):return unicodedata.normalize('NFKC',name).casefold()
 
 
+def root_name(value):
+    if not isinstance(value,str):raise AppError('INVALID_FOLDER_NAME','请输入目录名称')
+    value=unicodedata.normalize('NFKC',value.strip()) or 'anime'
+    if len(value)>100 or value in {'.','..'} or value.endswith('.') or any(ord(c)<32 or ord(c)==127 or c in '/\\<>:"|?*' for c in value):
+        raise AppError('INVALID_FOLDER_NAME','目录名称不能包含路径或特殊字符')
+    return value
+
+
 class CloudLayout:
     def __init__(self,store,workflow,catalog):
         self.store,self.workflow,self.catalog=store,workflow,catalog
@@ -40,28 +48,33 @@ class CloudLayout:
             if 'pending_name' not in columns:db.execute('ALTER TABLE cloud_series ADD COLUMN pending_name TEXT')
             if 'create_started' not in columns:db.execute('ALTER TABLE cloud_series ADD COLUMN create_started INTEGER NOT NULL DEFAULT 0')
 
-    def root(self,pan,binding):
-        """Only rename the bound root, never adopt an unrelated mikan folder."""
-        if binding['root_name']=='mikan':
-            pan.verify_child('0',binding['root_cid'],'mikan');return binding
+    def root(self,pan,binding,*,target=None,allow_current=False):
+        """Rename only the bound directory ID; explicit edits may confirm its current name."""
+        target=root_name(target if target is not None else self.store.setting('cloud_root_name','anime'))
+        if binding['root_name']==target and not allow_current:
+            pan.verify_child('0',binding['root_cid'],target);return binding
         old='Mikan115-Transfers-'+self.store.instance_id[:8]
-        if binding['root_name']!=old:raise AppError('FOLDER_SCOPE_MISMATCH','转存目录未确认',409)
+        if not allow_current and binding['root_name'] not in {old,'mikan',target} and not self.store.setting('cloud_root_name'):
+            raise AppError('FOLDER_SCOPE_MISMATCH','转存目录未确认，请保存目录设置',409)
         rows=pan.list_files('0')
         same=[r for r in rows if not r.get('fid') and str(r.get('cid'))==binding['root_cid']]
         if len(same)!=1:raise AppError('FOLDER_SCOPE_MISMATCH','转存目录已变化',409)
         name=str(same[0].get('n') or same[0].get('name'))
-        if name not in {old,'mikan'}:raise AppError('FOLDER_SCOPE_MISMATCH','转存目录已变化',409)
-        if any(normalized(str(r.get('n') or r.get('name') or ''))=='mikan' and str(r.get('cid'))!=binding['root_cid'] for r in rows):
-            raise AppError('CLOUD_ROOT_CONFLICT','已存在其他 mikan 目录，请先更名后重试',409)
+        if any(normalized(str(r.get('n') or r.get('name') or ''))==normalized(target) and str(r.get('cid'))!=binding['root_cid'] for r in rows):
+            raise AppError('CLOUD_ROOT_CONFLICT','目录名称已被使用，请换一个名称',409)
         # The persisted intent distinguishes a completed rename from external changes.
         intent=self.store.setting('cloud_root_rename')
-        if name=='mikan' and intent!=binding['root_cid']:raise AppError('FOLDER_SCOPE_MISMATCH','转存目录已变化',409)
-        self.store.set_setting('cloud_root_rename',binding['root_cid'])
-        if name==old:pan.rename_file(binding['root_cid'],'mikan')
-        pan.verify_child('0',binding['root_cid'],'mikan')
+        if not allow_current and name!=binding['root_name'] and not (intent==binding['root_cid'] and name==target):
+            raise AppError('FOLDER_SCOPE_MISMATCH','转存目录已变化，请保存目录设置',409)
         with self.store.transaction() as db:
-            db.execute("UPDATE binding SET root_name='mikan',updated_at=? WHERE id=1 AND root_cid=?",(time.time(),binding['root_cid']))
+            for key,value in [('cloud_root_rename',binding['root_cid']),('cloud_root_name',target)]:
+                db.execute('INSERT INTO settings VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',(key,value))
+        if name!=target:pan.rename_file(binding['root_cid'],target)
+        pan.verify_child('0',binding['root_cid'],target)
+        with self.store.transaction() as db:
+            db.execute('UPDATE binding SET root_name=?,updated_at=? WHERE id=1 AND root_cid=?',(target,time.time(),binding['root_cid']))
             db.execute("DELETE FROM settings WHERE key='cloud_root_rename'")
+            db.execute("INSERT INTO settings VALUES('cloud_directory_version','2') ON CONFLICT(key) DO UPDATE SET value=excluded.value")
         return self.store.binding(False)
 
     def identity(self,task):
@@ -109,7 +122,7 @@ class CloudLayout:
                 name=title
                 if normalized(name) in occupied:name=clean(title,75)+' ['+clean(key,35)+']'
                 if normalized(name) in occupied:raise AppError('SERIES_FOLDER_CONFLICT','系列目录重名，请核对后重试',409)
-                pending='.mikan-'+secrets.token_hex(16)
+                pending='.anime-'+secrets.token_hex(16)
                 db.execute('INSERT INTO cloud_series(series_key,name,pending_name) VALUES(?,?,?)',(key,name,pending))
         self.ensure_series(pan,binding,key)
         # AList resolves a new path through its cached parent listing. Refresh

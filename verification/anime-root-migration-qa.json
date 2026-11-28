@@ -1,0 +1,57 @@
+{
+  "success": true,
+  "storage_layout": "anime/series/episode-file",
+  "windows_full_suite": {
+    "tests": 258,
+    "success": true,
+    "skipped": 1,
+    "skip_reason": "Windows symlink privilege; covered by Linux"
+  },
+  "linux_suites": {
+    "tests": 33,
+    "modules": [
+      "tests.test_root_migration",
+      "tests.test_updates"
+    ],
+    "success": true,
+    "network": "none",
+    "compose_config": true
+  },
+  "browser": {
+    "desktop_checks": 31,
+    "mobile_checks": 31,
+    "success": true,
+    "fixture_services": true
+  },
+  "migration_cases": [
+    "same cloud directory ID and AList storage retained",
+    "existing local files retained and database paths migrated",
+    "lost-response recovery without repeated rename",
+    "preexisting and concurrently created target never overwritten",
+    "active downloads and update health check defer migration",
+    "incompatible code rollback blocked",
+    "expired cloud session pauses until settings updated"
+  ],
+  "vps_directory": {
+    "anime_exists": true,
+    "legacy_mikan_exists": false,
+    "existing_files_modified": false
+  },
+  "real_115_login": false,
+  "new_cloud_tasks": 0,
+  "scope": "Offline fixture regressions and actual empty VPS directory check; no live cloud rename asserted by this report.",
+  "frontend_tests": {
+    "tests": 12,
+    "success": true
+  },
+  "custom_directory": {
+    "default": "anime",
+    "read_only_ck_verification_independent_of_directory_and_alist": true,
+    "directory_conflicts_keep_cookie_verified": true,
+    "explicit_name_edit_keeps_original_directory_id": true,
+    "same_ck_shared_with_alist": true,
+    "unrelated_named_directory_never_adopted": true,
+    "invalid_paths_and_extra_fields_rejected": true,
+    "custom_name_persisted": true
+  }
+}
