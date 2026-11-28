@@ -35,6 +35,18 @@ def parse(title,group_id='',group_name=''):
             start=int(match[1]);end=int(match[2]) if match[2] else start
             if start<=end<=start+500:episodes=list(range(start,end+1))
     full=re.search(r'全\s*(\d{1,3})\s*[集话話]',title)
+    if season is None:
+        marked=re.search(r'第\s*([零〇一二三四五六七八九十\d]{1,3})\s*季|\bseason[ ._-]*(\d{1,2})\b|\b(\d{1,2})(?:st|nd|rd|th)[ ._-]+season\b|\bS(\d{1,2})(?=[ ._\-\]\s]|$)',title,re.I)
+        if marked:
+            token=next(v for v in marked.groups() if v is not None)
+            digits={'零':0,'〇':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9}
+            if token.isdigit():season=int(token)
+            elif '十' in token:
+                left,right=token.split('十',1)
+                if (not left or left in digits) and (not right or right in digits):season=(digits.get(left,1)*10)+digits.get(right,0)
+            elif token in digits:season=digits[token]
+            if season is not None and 0<=season<=99:explicit=True
+            else:season=None
     if full and not episodes and 1<=int(full[1])<=500:episodes=list(range(1,int(full[1])+1))
     batch=len(episodes)>1 or has(r'全集|合集|合辑|合集|\b(?:batch|complete)\b|全\s*\d+\s*[话話集]')
     revision=re.search(r'(?:\b\d{1,3}|[\]】 ])v(\d)\b',lower)
@@ -51,7 +63,7 @@ def rules(value=None):
         values=out[key]
         if not isinstance(values,list) or len(values)>limit or any(not isinstance(v,str) or len(v)>100 for v in values):raise AppError('INVALID_RULES','筛选条件过长')
         out[key]=list(dict.fromkeys(v.strip() for v in values if v.strip()))
-    if any(not re.fullmatch(r'\d+',v) for v in out['group_ids']):raise AppError('INVALID_GROUP','字幕组标识无效')
+    if any(not re.fullmatch(r'(?:\d+|(?:dmhy|nyaa|acgrip):[A-Za-z0-9_-]{1,64})',v) for v in out['group_ids']):raise AppError('INVALID_GROUP','字幕组标识无效')
     if set(out['versions'])-set(VERSIONS) or set(out['resolutions'])-{'2160p','1080p','720p','480p','unknown'}:raise AppError('INVALID_RULES','字幕或分辨率无效')
     if out['dedupe'] not in {'episode','episode_version','hash'}:raise AppError('INVALID_RULES','去重方式无效')
     for key,low,high in [('wait_minutes',0,1440),('season',0,99),('min_episode',0,9999),('max_episode',0,9999),('episode_offset',-1000,1000)]:
@@ -84,6 +96,9 @@ def priority(item,rule):
 
 def episode_keys(item,rule):
     r=item['release'];bid=item.get('bangumi_id')
+    if item.get('scope_key') and r['episodes'] and rule['dedupe']!='hash':
+        suffix=':'+r['version'] if rule['dedupe']=='episode_version' else ''
+        return [item['scope_key']+f':e{n}'+suffix for n in normalized_episodes(r,rule)]
     if not bid or not r['episodes'] or rule['dedupe']=='hash':return ['hash:'+item['key']]
     # A naming override must not create a new duplicate identity.
     season=r['season'] if r['season'] is not None else item.get('identity_season')

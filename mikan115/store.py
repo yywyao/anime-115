@@ -53,6 +53,10 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 CREATE TABLE IF NOT EXISTS subscription_items (
  subscription_id TEXT NOT NULL REFERENCES subscriptions(id), item_key TEXT NOT NULL,
  transfer_id TEXT, PRIMARY KEY(subscription_id,item_key));
+CREATE TABLE IF NOT EXISTS subscription_sources (
+ subscription_id TEXT NOT NULL REFERENCES subscriptions(id),source_key TEXT NOT NULL,provider TEXT NOT NULL,
+ source_encrypted TEXT NOT NULL,created_at REAL NOT NULL,
+ PRIMARY KEY(subscription_id,source_key));
 CREATE TABLE IF NOT EXISTS catalog_cache (
  key TEXT PRIMARY KEY, payload TEXT NOT NULL, expires_at REAL NOT NULL);
 CREATE TABLE IF NOT EXISTS favorites (
@@ -87,6 +91,10 @@ CREATE TABLE IF NOT EXISTS subscription_claims (
 CREATE TABLE IF NOT EXISTS transfer_naming (
  transfer_id TEXT PRIMARY KEY REFERENCES transfers(id),metadata TEXT NOT NULL,auto_rename INTEGER NOT NULL DEFAULT 0,
  status TEXT NOT NULL DEFAULT 'PENDING',error TEXT,updated_at REAL NOT NULL);
+CREATE TABLE IF NOT EXISTS acquisition_claims (
+ user_id INTEGER NOT NULL REFERENCES users(id),scope_key TEXT NOT NULL,episode INTEGER NOT NULL,
+ variant TEXT NOT NULL,destination TEXT NOT NULL,transfer_id TEXT NOT NULL REFERENCES transfers(id),
+ PRIMARY KEY(user_id,scope_key,episode,variant,destination));
 CREATE TABLE IF NOT EXISTS following_downloads (
  subscription_id TEXT NOT NULL REFERENCES subscriptions(id), transfer_id TEXT NOT NULL REFERENCES transfers(id),
  revision INTEGER NOT NULL, submitted INTEGER NOT NULL DEFAULT 0, next_retry REAL NOT NULL DEFAULT 0,
@@ -116,8 +124,10 @@ class Store:
         with contextlib.closing(self.connect()) as c:
             c.executescript(SCHEMA)
             columns={r['name'] for r in c.execute('PRAGMA table_info(subscriptions)')}
-            for name,definition in [('rules_json',"TEXT NOT NULL DEFAULT '{}'"),('source_encrypted',"TEXT NOT NULL DEFAULT ''"),('source_kind',"TEXT NOT NULL DEFAULT 'bangumi'"),('revision','INTEGER NOT NULL DEFAULT 1'),('removed','INTEGER NOT NULL DEFAULT 0')]:
+            for name,definition in [('rules_json',"TEXT NOT NULL DEFAULT '{}'"),('source_encrypted',"TEXT NOT NULL DEFAULT ''"),('source_kind',"TEXT NOT NULL DEFAULT 'bangumi'"),('revision','INTEGER NOT NULL DEFAULT 1'),('removed','INTEGER NOT NULL DEFAULT 0'),('scope_key',"TEXT NOT NULL DEFAULT ''"),('accept_after','REAL NOT NULL DEFAULT 0')]:
                 if name not in columns:c.execute('ALTER TABLE subscriptions ADD COLUMN '+name+' '+definition)
+            download_columns={r['name'] for r in c.execute('PRAGMA table_info(following_downloads)')}
+            if 'episodes_json' not in download_columns:c.execute("ALTER TABLE following_downloads ADD COLUMN episodes_json TEXT NOT NULL DEFAULT '[]'")
             rename_columns={r['name'] for r in c.execute('PRAGMA table_info(rename_operations)')}
             for name in ['remote_id','parent_cid']:
                 if name not in rename_columns:c.execute('ALTER TABLE rename_operations ADD COLUMN '+name+" TEXT NOT NULL DEFAULT ''")

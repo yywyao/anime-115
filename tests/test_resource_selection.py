@@ -37,7 +37,9 @@ class ResourceSelection(Harness):
         self.assertEqual(metadata['rules']['versions'],['chs-ja'])
         self.assertEqual(self.state.submit_count,0)
         self.groups[0]['resources'].append(self.groups[1]['resources'][0])
-        result=self.app.batch.selected(self.user,'236',['c'*40])
+        # Explicit hash-only policy permits an alternate release of the same
+        # episode, so this assertion isolates multi-group provenance.
+        result=self.app.batch.selected(self.user,'236',['c'*40],{'dedupe':'hash'})
         row=self.store.one('SELECT metadata FROM transfer_naming WHERE transfer_id=?',(result['tasks'][0]['id'],))
         duplicate=json.loads(row['metadata'])
         self.assertEqual({source['group_id'] for source in duplicate['sources']},{'7','8'})

@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.sqlite -text
+*.png -text
+*.jpg -text
+*.webp -text
+*.woff -text
+*.woff2 -text

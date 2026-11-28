@@ -27,3 +27,6 @@ test-results
 work-run-*.json
 .venv
 .git
+
+updates
+.deps

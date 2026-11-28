@@ -28,6 +28,10 @@ from .metadata import Metadata
 from .sonarr import Sonarr
 from .organizer import Organizer
 from .cloud_layout import CloudLayout
+from .inventory import Inventory
+from .tracking_catalog import TrackingCatalog
+from .updater import Updates,read_json
+from .magnet_import import MagnetImport
 from .releases import VERSIONS
 
 
@@ -42,12 +46,19 @@ class Application:
         self.rss=RSS(self.store,config,self.catalog,self.workflow)
         self.sonarr=Sonarr(self.store,config=config);self.organizer=Organizer(self.store,self.workflow,self.catalog,self.sonarr)
         self.library=Library(self.store,self.workflow,catalog=self.catalog)
-        self.batch=Batch(self.catalog,self.workflow,self.library)
+        self.inventory=Inventory(self.store,self.catalog,self.workflow,self.library)
+        self.batch=Batch(self.catalog,self.workflow,self.library,self.inventory)
+        self.rss.inventory=self.inventory
+        self.workflow.inventory=self.inventory
+        self.tracking_catalog=TrackingCatalog(self.catalog,self.metadata)
+        self.updates=Updates(self.store,config)
+        self.magnet_import=MagnetImport(self.workflow,self.inventory,self.library,self.catalog)
         if self.auth.setup_required() and not config.setup_token and not self.store.setting('setup_token'):
             self.store.set_setting('setup_token',secrets.token_urlsafe(32))
         self.stop_event=threading.Event();self.worker=None;self.library_worker=None
 
     def start_worker(self):
+        self.updates.start()
         if hasattr(self.catalog,'start_updates'):self.catalog.start_updates()
         self.rss.start()
         def run():
@@ -70,6 +81,7 @@ class Application:
         if self.worker:self.worker.join(timeout=25)
         if self.library_worker:self.library_worker.join(timeout=2)
         self.rss.close()
+        self.updates.close()
         if hasattr(self.catalog,'close'):self.catalog.close()
 
 
@@ -89,6 +101,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def app(self):return self.server.app
 
     def headers_common(self,cache_control='no-store'):
+        if self.close_connection:self.send_header('Connection','close')
         self.send_header('X-Content-Type-Options','nosniff')
         self.send_header('Referrer-Policy','same-origin')
         self.send_header('X-Frame-Options','DENY')
@@ -128,13 +141,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if csrf and not hmac.compare_digest(self.headers.get('X-CSRF-Token',''),session['csrf']):raise AppError('CSRF_REQUIRED','页面会话已变化，请刷新后重试',403)
         return session['user']
 
-    def read_json(self):
-        if self.headers.get('Transfer-Encoding'):raise AppError('UNSUPPORTED_BODY','不支持此请求传输方式',400)
+    def read_json(self,limit=32768):
+        if self.headers.get('Transfer-Encoding'):
+            self.close_connection=True;raise AppError('UNSUPPORTED_BODY','不支持此请求传输方式',400)
         try:size=int(self.headers.get('Content-Length','0'))
         except ValueError:raise AppError('INVALID_BODY','请求内容长度不正确')
-        if size<0 or size>32768:raise AppError('BODY_TOO_LARGE','请求内容过大',413)
+        if size<0 or size>262144:
+            self.close_connection=True;raise AppError('BODY_TOO_LARGE','请求内容过大',413)
+        raw=self.rfile.read(size)
+        if size>limit:raise AppError('BODY_TOO_LARGE','请求内容过大',413)
         if self.headers.get_content_type()!='application/json':raise AppError('JSON_REQUIRED','请使用 JSON 请求',415)
-        try:data=json.loads(self.rfile.read(size))
+        try:data=json.loads(raw)
         except (ValueError,UnicodeError):raise AppError('INVALID_JSON','请求内容格式不正确')
         if not isinstance(data,dict):raise AppError('INVALID_JSON','请求内容须为对象')
         return data
@@ -160,7 +177,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         try:
             path,q=self.route()
-            if path=='/api/health':return self.send_json({'ok':True,'service':'mikan115','version':'0.1.0','real_credentials_required_for_live_validation':True})
+            if path=='/api/health':return self.send_json({'ok':True,'service':'mikan115','version':os.environ.get('MIKAN_RUNNING_VERSION','bundled'),'boot_id':os.environ.get('MIKAN_BOOT_ID','')})
             if path=='/api/auth/config':return self.send_json({'setup_required':self.app.auth.setup_required(),'registration_enabled':False,'auth_type':'local','cookie_login_for_115_only':True})
             if path=='/api/auth/me':
                 s=self.app.auth.session(self.session_token())
@@ -205,6 +222,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
             if path=='/api/subscriptions':return self.send_json({'subscriptions':self.app.rss.list(self.session(),q.get('scope')=='all'),'settings':self.app.rss.settings()})
             if path=='/api/subscriptions/options':
                 self.session();return self.send_json(self.app.rss.options(q.get('work_id',''),q.get('bangumi_id')))
+            if path=='/api/subscriptions/search':
+                self.session();return self.send_json(self.app.tracking_catalog.search(q.get('q',''),q.get('tmdb')=='1'))
+            m=re.fullmatch(r'/api/subscriptions/([a-f0-9]{32})/options',path)
+            if m:return self.send_json(self.app.rss.configuration_for(self.app.rss.authorize(self.session(),m[1])))
             if path=='/api/subtitle-groups':
                 self.session();term=str(q.get('q',''))[:80]
                 return self.send_json({'groups':self.app.store.all('SELECT group_id id,name,count(DISTINCT bangumi_id) works FROM work_groups WHERE name LIKE ? GROUP BY group_id,name ORDER BY works DESC,name LIMIT 1000',('%'+term+'%',))})
@@ -218,6 +239,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.session(admin=True);return self.send_json(self.app.workflow.connection_status())
             if path=='/api/settings/metadata':
                 self.session(admin=True);return self.send_json(self.app.metadata.status())
+            if path=='/api/settings/updates':
+                self.session(admin=True);return self.send_json(self.app.updates.status())
             if path=='/api/admin/users':
                 self.session(admin=True);rows=self.app.store.all('SELECT * FROM users ORDER BY id')
                 return self.send_json({'users':[public_user(x) for x in rows]})
@@ -254,7 +277,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         try:
             # Consume the bounded body before rejecting its origin, so the
             # HTTP connection cannot retain unread JSON as a next request.
-            path,q=self.route();data=self.read_json();self.ensure_origin()
+            path,q=self.route();data=self.read_json(262144 if path=='/api/transfers/import' else 32768);self.ensure_origin()
             if path=='/api/auth/setup':
                 user=self.app.auth.create_user(data.get('username'),data.get('password'),admin=True,first=True,setup_token=data.get('setup_token',''))
                 return self.send_json({'success':True,'user':user},201)
@@ -284,8 +307,16 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.session(admin=True);return self.send_json(self.app.workflow.configure_alist(data))
             if path=='/api/settings/following':
                 self.session(admin=True);return self.send_json(self.app.rss.configure(data))
+            if path=='/api/settings/updates':
+                self.session(admin=True)
+                if 'action' in data:
+                    if set(data)!={'action'}:raise AppError('INVALID_UPDATE','更新操作无效')
+                    return self.send_json(self.app.updates.run(data['action']),202)
+                return self.send_json(self.app.updates.configure(data))
             if path=='/api/library/actions':
                 return self.send_json(self.app.batch.action(user,data),202 if 'digest' in data else 200)
+            if path=='/api/transfers/import':
+                return self.send_json(self.app.magnet_import.plan(user,data),202 if 'digest' in data else 200)
             if path=='/api/library/downloads':
                 ids=data.get('task_ids')
                 if set(data)!={'task_ids'} or not isinstance(ids,list) or not 1<=len(ids)<=100 or any(
@@ -298,9 +329,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 return self.send_json({'tasks':tasks,'failed':failed},202)
             if path=='/api/library/resources':
                 if set(data)-{'mikan_id','release_ids','rules'}:raise AppError('INVALID_RELEASES','下载参数无效')
-                result=self.app.batch.selected(user,data.get('mikan_id'),data.get('release_ids'),data.get('rules'))
-                downloads=[self.app.library.request(user,task['id']) for task in result['tasks']]
-                return self.send_json({**result,'downloads':downloads},202)
+                result=self.app.batch.selected(user,data.get('mikan_id'),data.get('release_ids'),data.get('rules'),destination='vps')
+                return self.send_json(result,202)
             m=re.fullmatch(r'/api/tasks/([a-f0-9]{32})/vps-download',path)
             if m:
                 if set(data)-{'file_ids'}:raise AppError('INVALID_LIBRARY_FILES','请选择要下载的文件')
@@ -328,10 +358,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 else:self.app.workflow.poll(m[1],True);task=self.app.workflow.get(user,m[1])
                 return self.send_json({'task':task})
             if path=='/api/subscriptions':return self.send_json(self.app.rss.create(user,data),201)
+            if path=='/api/subscriptions/tmdb':return self.send_json(self.app.tracking_catalog.choose(data))
             if path=='/api/subscriptions/options':
-                prepared=self.app.rss.prepare(data)
-                if prepared['source_kind']=='personal':return self.send_json({'source_kind':'personal','groups':[],'versions':VERSIONS})
-                return self.send_json({**self.app.rss.options(prepared['work_id'],prepared['bangumi_id']),'source_subgroup_id':prepared['subgroup_id']})
+                return self.send_json(self.app.rss.configuration(user,data))
             if path=='/api/subscriptions/preview':return self.send_json(self.app.rss.preview(user,data))
             m=re.fullmatch(r'/api/subscriptions/([a-f0-9]{32})/(preview|check)',path)
             if m:
@@ -418,7 +447,17 @@ def main():
     config=Config.from_env();app=Application(config)
     if app.auth.setup_required():
         print('Administrator setup required.',flush=True)
-    server=Server((config.host,config.port),app);app.start_worker()
+    server=Server((config.host,config.port),app)
+    if os.environ.get('MIKAN_SUPERVISED')=='1':
+        def control():
+            started=False
+            while not app.stop_event.wait(.25):
+                state=read_json(app.updates.home/'control.json')
+                if state.get('boot_id')!=os.environ.get('MIKAN_BOOT_ID'):continue
+                if state.get('stop'):server.shutdown();return
+                if state.get('active') and not started:app.start_worker();started=True
+        threading.Thread(target=control,name='update-control',daemon=True).start()
+    else:app.start_worker()
     print(f'Mikan115 listening on {config.host}:{config.port}',flush=True)
     try:server.serve_forever()
     except KeyboardInterrupt:pass

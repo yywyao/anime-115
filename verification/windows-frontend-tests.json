@@ -1,21 +1,25 @@
 {
-  "verified_utc": "2026-11-28T04:57:18.822Z",
+  "verified_utc": "2026-11-28T06:45:00.483Z",
   "node": "v24.22.3",
   "platform": "win32",
   "success": true,
-  "tests_run": 10,
+  "tests_run": 12,
   "environment": "Artificial fetch responses only; no provider connection or real credentials.",
   "file_hashes": {
     "frontend/api.js": "99192bafef37c1499968301982c414a782c1fe9125588d9be2d11cda72607aa9",
     "frontend/api.test.mjs": "3b4a353178366888ae9d5df6d3d9f3bf17b0777cfbcea643fbc083533e7b9da8",
-    "frontend/components.jsx": "e71eeb5d0a19eb43221d9326a7ca5495400e189d54f20830a952a493d6321558",
+    "frontend/components.jsx": "e7452af903872c83e0dd2ea5aabde8037f7d6c5675229559d28e3091619213bf",
     "frontend/service-settings.jsx": "79309fa4ae00b8f36f04a56472538e309c7a8e59290cec8005c18f8cdbd7d6ca",
-    "frontend/resources.jsx": "7c073cdef991d192dd2b80b0633fb964110f243565201de7919a59734670685f",
+    "frontend/resources.jsx": "5c2358719fd4ed4df35b9d3b4d44f0a5491f3bd485d4a52752d8c09677cd96e9",
     "frontend/release-selection.js": "4206e73259ad94692dc9901381f855c0e885ad5d55c75fd63d04dcabc2440176",
     "frontend/release-selection.test.mjs": "c7cd0b2aa7bbcc4f778c4b51e9f8cfffbef3a2bd4fccfc2dc722c5cf72a94481",
-    "frontend/tracking.jsx": "2255e81cb6391e01bd0f0051c3b1e7d380e5ac82f696b91534fef638fbc16959",
-    "frontend/review.css": "6a24621d9d363df8430fef5b196b336c2b44dba664a7ae0684f5414dbb444c23",
+    "frontend/tracking.jsx": "0a042b3a6d2daa8e342c74c4c3bd777683149700e5e854d3eb63cc47266c2afa",
+    "frontend/follow-dialog.jsx": "ed3dd1da669a38fe71a4a7432f5bd1a4f0cf3b63201c399507f98442ed46eba4",
+    "frontend/collection-plan.js": "565fa6526f93177b06a0eda99078064682c9a99d74fc07beb692246e96182a98",
+    "frontend/update-settings.jsx": "8fe7ea7d1824cac6ad38cff1ee87ce08688def1cbd7791473a6a87d1fcfb6df0",
+    "frontend/magnet-import.jsx": "2d793a88a648248a8c92d6ef124150e1852860e60acb19f585f7fd2b6fc47a68",
+    "frontend/review.css": "1fabcfa0d6d0435a4bc97f6fac15403955d804bba98a1b552b6399304a10eedc",
     "frontend/shell.js": "d69a1d7c97f29395b49386e34f431def1930f29896b96fcdb1451b4d450e03ee",
-    "static/mikan115-ui.js": "5f920a0fcc3ceb1394e8b7fbeb415828cd911b0835d687980e0af5fe6febc136"
+    "static/mikan115-ui.js": "0d004826a47f9568cc5c49ef01bbb7e92cc38cebd8c890389c9063758703c068"
   }
 }

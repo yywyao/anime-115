@@ -1,0 +1,42 @@
+{
+  "success": true,
+  "scope": "Public RSS read-only fetch and parsing; no subscriptions, 115 login, torrent download or cloud tasks.",
+  "results": [
+    {
+      "provider": "mikan",
+      "success": true,
+      "items": 371,
+      "explicit_episode_items": 365,
+      "matched_to_confirmed_work": 244,
+      "magnet_items": 0,
+      "seconds": 2.55
+    },
+    {
+      "provider": "dmhy",
+      "success": true,
+      "items": 500,
+      "explicit_episode_items": 483,
+      "matched_to_confirmed_work": 113,
+      "magnet_items": 500,
+      "seconds": 6.41
+    },
+    {
+      "provider": "nyaa",
+      "success": true,
+      "items": 75,
+      "explicit_episode_items": 72,
+      "matched_to_confirmed_work": 19,
+      "magnet_items": 75,
+      "seconds": 2.38
+    },
+    {
+      "provider": "acgrip",
+      "success": true,
+      "items": 30,
+      "explicit_episode_items": 27,
+      "matched_to_confirmed_work": 18,
+      "magnet_items": 0,
+      "seconds": 3.25
+    }
+  ]
+}

@@ -70,6 +70,7 @@ class Organizer:
                 continue
             tag=release if release.get('version')!='unknown' else parsed
             tokens=[release.get('group') or parsed.get('group'),releases.VERSIONS.get(tag.get('version')) if tag.get('version') not in (None,'unknown') else '',tag.get('resolution') if tag.get('resolution') not in (None,'unknown') else '']
+            if meta.get('action')=='upgrade':tokens.append('版本 '+task['infohash'][:8])
             base=clean(work.get('series_title') or work['title'])+f' - S{season:02d}E{ep:02d}'
             if rule['episode_title']:
                 titles=[e.get('title') for e in work.get('episodes',[]) if e.get('season_number')==season and e.get('episode_number')==ep and e.get('title')]

@@ -20,6 +20,8 @@ secret.key
 *.log
 logs/
 cache/
+updates/
+.deps/
 test-results/
 work-run-*.json
 coverage/

@@ -182,18 +182,68 @@ class Workflow:
 
     def create(self,user,magnet,title='',work_id='',*,subscription_id=None,subscription_revision=None,enqueue_only=False,naming=None):
         infohash,magnet=normalize_magnet(magnet)
+        acquisition=(naming or {}).get('acquisition') or {}
+        if naming and not naming.get('scope_key') and self.layout and work_id:
+            from .inventory import work_scope
+            naming={**naming,'scope_key':work_scope(self.layout.catalog,self.layout.catalog.work(work_id))}
+        if naming and naming.get('scope_key') and not acquisition:
+            from . import releases
+            rule=releases.rules(naming.get('rules') or {})
+            acquisition={'scope_key':naming['scope_key'],'episodes':releases.normalized_episodes(naming.get('release') or releases.parse(title),rule),
+                         'destination':'cloud','dedupe':rule['dedupe'],'version':(naming.get('release') or {}).get('version','unknown')}
+        eps=sorted({e for e in acquisition.get('episodes',[]) if type(e) is int and 0<e<=9999})
+        variant=('hash:'+infohash if acquisition.get('upgrade') or acquisition.get('dedupe')=='hash' else
+                 'version:'+str(acquisition.get('version','unknown')) if acquisition.get('dedupe')=='episode_version' else '')
+        destination=acquisition.get('destination','cloud')
+        if destination not in {'cloud','vps'}:raise AppError('INVALID_DESTINATION','请选择保存位置')
         with self.connection_lock:
             b=self.store.binding();now=time.time()
+            existing=self.store.one('SELECT t.*,n.metadata FROM transfers t LEFT JOIN transfer_naming n ON n.transfer_id=t.id WHERE t.account_uid=? AND t.infohash=?',(b['account_uid'],infohash))
+            if existing and naming and naming.get('scope_key'):
+                from .inventory import work_scope
+                old_scope=json.loads(existing.get('metadata') or '{}').get('scope_key')
+                if not old_scope and existing['work_id'] and self.layout:
+                    old_scope=work_scope(self.layout.catalog,self.layout.catalog.work(existing['work_id']))
+                if old_scope and old_scope!=naming['scope_key']:raise AppError('RESOURCE_WORK_CONFLICT','相同资源已关联其他作品，请核对作品与季度',409)
             with self.store.transaction() as c:
+                maintenance=c.execute("SELECT value FROM settings WHERE key='update_maintenance'").fetchone()
+                if maintenance and maintenance['value']=='1':raise AppError('UPDATE_IN_PROGRESS','更新中，请稍后再试',503)
                 if subscription_id:
                     sub=c.execute('SELECT enabled,user_id,revision,removed FROM subscriptions WHERE id=?',(subscription_id,)).fetchone()
                     paused=c.execute("SELECT value FROM settings WHERE key='rss_paused'").fetchone()
                     if not sub or not sub['enabled'] or sub['removed'] or sub['user_id']!=user['id'] or (subscription_revision is not None and sub['revision']!=subscription_revision) or (paused and paused['value']=='1'):return None
-                row=c.execute('SELECT id FROM transfers WHERE account_uid=? AND infohash=?',(b['account_uid'],infohash)).fetchone()
+                reuse=None
+                if eps and acquisition.get('scope_key'):
+                    candidates=[]
+                    for episode in eps:
+                        claims=c.execute('''SELECT a.transfer_id,t.state,n.metadata FROM acquisition_claims a
+                            JOIN transfers t ON t.id=a.transfer_id LEFT JOIN transfer_naming n ON n.transfer_id=t.id
+                            WHERE a.user_id=? AND a.scope_key=? AND a.episode=? AND a.variant=?
+                            ORDER BY a.destination=? DESC''',(user['id'],acquisition['scope_key'],episode,variant,destination)).fetchall()
+                        valid=[]
+                        for claim in claims:
+                            if claim['state'] in {'FAILED','CANCELED'}:continue
+                            if claim['state']=='FILES_READY' and 'verified_tasks' in acquisition and claim['transfer_id'] not in acquisition['verified_tasks']:continue
+                            meta=json.loads(claim['metadata'] or '{}')
+                            from . import releases
+                            if meta.get('release') and releases.admit({'title':title,'release':meta['release']},{**releases.rules((naming or {}).get('rules') or {}),'allow_batches':True}):continue
+                            valid.append(claim['transfer_id'])
+                        candidates.append(set(valid))
+                    common=set.intersection(*candidates) if candidates and all(candidates) else set()
+                    if common:reuse=sorted(common)[0]
+                    elif any(candidates):raise AppError('EPISODES_ALREADY_QUEUED','部分剧集已在处理中，请刷新清单',409)
+                row=c.execute('SELECT id FROM transfers WHERE id=?',(reuse,)).fetchone() if reuse else c.execute('SELECT id FROM transfers WHERE account_uid=? AND infohash=?',(b['account_uid'],infohash)).fetchone()
                 tid=row['id'] if row else secrets.token_hex(16)
                 if not row:c.execute('INSERT INTO transfers(id,account_uid,infohash,magnet,title,work_id,state,created_at,updated_at) VALUES(?,?,?,?,?,?,\'NEW\',?,?)',
                     (tid,b['account_uid'],infohash,magnet,str(title or infohash)[:300],str(work_id)[:150],now,now))
+                elif naming and not c.execute('SELECT work_id FROM transfers WHERE id=?',(tid,)).fetchone()['work_id']:
+                    c.execute('UPDATE transfers SET work_id=? WHERE id=?',(str(work_id),tid))
                 c.execute('INSERT OR IGNORE INTO transfer_owners VALUES(?,?)',(tid,user['id']))
+                if eps and acquisition.get('scope_key'):
+                    for episode in eps:
+                        c.execute('''INSERT INTO acquisition_claims VALUES(?,?,?,?,?,?)
+                            ON CONFLICT(user_id,scope_key,episode,variant,destination) DO UPDATE SET transfer_id=excluded.transfer_id''',
+                            (user['id'],acquisition['scope_key'],episode,variant,destination,tid))
                 if naming and (not row or c.execute('SELECT work_id FROM transfers WHERE id=?',(tid,)).fetchone()['work_id']==str(work_id)):
                     c.execute('INSERT OR IGNORE INTO transfer_naming VALUES(?,?,?,?,?,?)',
                               (tid,json.dumps(naming,ensure_ascii=False),int(naming['rules'].get('rename',True)),'PENDING',None,now))
@@ -363,6 +413,7 @@ class Workflow:
 
     def tick(self):
         self.reconcile_connection()
+        if self.store.setting('update_maintenance')=='1':return
         # Persisted NEW tasks are safe to claim after a restart. An interrupted
         # SUBMITTING task is ambiguous and must never be silently sent again.
         with self.store.transaction() as c:

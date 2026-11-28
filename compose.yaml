@@ -2,6 +2,7 @@ services:
   app:
     build: .
     restart: unless-stopped
+    stop_grace_period: 90s
     user: "${APP_UID:-10001}:${APP_GID:-10001}"
     environment:
       MIKAN_HOST: 0.0.0.0

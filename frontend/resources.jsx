@@ -1,289 +1,86 @@
 import {api,post} from './api.js';
 import {Modal,Notice,displayTitle} from './components.jsx';
 import {FollowModal,ReleaseInfo,useFollowing} from './tracking.jsx';
-import {filterGroups,releaseId,resolutions,subtitleVersions,toggleGroupSelection} from './release-selection.js';
+import {releaseId,resolutions,subtitleVersions,toggleGroupSelection} from './release-selection.js';
+import {selectionBody,effectiveSelection,episodeRanges} from './collection-plan.js';
 
 const emptyFilters=()=>({group_ids:[],resolutions:[],versions:[]});
-
 function FilterChoices({label,values,choices,onChange}){
-  return <fieldset className="m115-resource-filter">
-    <legend>{label}</legend>
-    <button type="button" aria-pressed={!values.length} onClick={()=>onChange([])}>不限</button>
-    {Object.entries(choices).map(([id,name])=><label key={id}>
-      <input type="checkbox" checked={values.includes(id)} onChange={event=>{
-        onChange(event.target.checked?[...values,id]:values.filter(value=>value!==id));
-      }}/>{name}
-    </label>)}
-  </fieldset>;
+ return <fieldset className="m115-resource-filter"><legend>{label}</legend>
+  <button type="button" aria-pressed={!values.length} onClick={()=>onChange([])}>不限</button>
+  {Object.entries(choices).map(([id,name])=><label key={id}><input type="checkbox" checked={values.includes(id)} onChange={e=>onChange(e.target.checked?[...values,id]:values.filter(v=>v!==id))}/>{name}</label>)}
+ </fieldset>;
 }
-
 export function ResourceModal({work,close}){
-  const {useState,useEffect,useRef}=window.Mikan115Runtime.React;
-  const [data,setData]=useState(null);
-  const [filters,setFilters]=useState(emptyFilters);
-  const [selected,setSelected]=useState(new Set());
-  const [expanded,setExpanded]=useState(new Set());
-  const [follow,setFollow]=useState(null);
-  const [sources,setSources]=useState([]);
-  const [term,setTerm]=useState(work.title||work.cleanTitle||'');
-  const [action,setAction]=useState('complete');
-  const [plan,setPlan]=useState(null);
-  const [error,setError]=useState('');
-  const [busy,setBusy]=useState('');
-  const [message,setMessage]=useState('');
-  const [login,setLogin]=useState(false);
-  const request=useRef(0);
-  const invoker=useRef(document.activeElement);
-  const subscriptions=useFollowing();
-  const ident=String(work.canonical_id||work.id||work.mikan_id||work.bangumiId||'');
-  const bid=String(data?.bangumi_id||work.mikan_id||work.bangumiId||'');
-  const groups=data?.groups||[];
-  const shown=filterGroups(groups,filters);
-  const matching=shown.flatMap(group=>group.resources);
-  const visibleIds=new Set(matching.map(releaseId).filter(Boolean));
-  const chosen=[...selected].filter(id=>visibleIds.has(id));
-  const title=displayTitle(work);
-  const currentSubscription=groupId=>subscriptions.find(item=>
-    String(item.bangumi_id)===bid&&String(item.subgroup_id||'0')===String(groupId||'0')
-  );
-
-  useEffect(()=>()=>queueMicrotask(()=>{
-    if(invoker.current?.isConnected)invoker.current.focus();
-  }),[]);
-
-  function failed(exception){
-    setError(exception.message);
-    if(exception.status===401)setLogin(true);
-  }
-
-  async function load(sourceId){
-    const sequence=++request.current;
-    setBusy('load');setError('');setSelected(new Set());setPlan(null);
-    try{
-      const query=new URLSearchParams({work_id:ident,...(sourceId?{bangumi_id:sourceId}:{})});
-      const result=await api('/resources?'+query);
-      if(sequence===request.current)setData(result);
-    }catch(exception){
-      if(sequence===request.current)failed(exception);
-    }finally{
-      if(sequence===request.current)setBusy('');
-    }
-  }
-
-  useEffect(()=>{
-    load();
-    return()=>{request.current++;};
-  },[ident]);
-
-  function changeFilters(key,values){
-    const next={...filters,[key]:values};
-    const visible=new Set(filterGroups(groups,next).flatMap(group=>group.resources).map(releaseId).filter(Boolean));
-    setFilters(next);
-    setSelected(previous=>new Set([...previous].filter(id=>visible.has(id))));
-    setPlan(null);setMessage('');
-  }
-
-  function toggle(resource){
-    const id=releaseId(resource);
-    if(!id||busy)return;
-    setSelected(previous=>{
-      const next=new Set(previous);
-      next.has(id)?next.delete(id):next.add(id);
-      return next;
-    });
-    setPlan(null);
-  }
-
-  function selectGroup(group){
-    setSelected(previous=>toggleGroupSelection(previous,group.resources));
-    setPlan(null);setMessage('');
-  }
-
-  async function search(event){
-    event.preventDefault();
-    setBusy('search');setError('');setMessage('');
-    try{
-      const result=await api('/search?q='+encodeURIComponent(term));
-      const found=(result.results||[]).filter(item=>/^\d+$/.test(String(item.mikan_id||item.bangumiId||'')));
-      setSources(found);
-      if(!found.length)setMessage('未找到资源');
-    }catch(exception){failed(exception);}
-    finally{setBusy('');}
-  }
-
-  async function transfer(ids,destination='cloud'){
-    if(!ids.length)return;
-    setBusy(destination);setError('');setMessage('');
-    try{
-      const result=await post(destination==='vps'?'/library/resources':'/transfers',{mikan_id:bid,release_ids:ids,rules:filters});
-      setSelected(previous=>new Set([...previous].filter(id=>!ids.includes(id))));
-      setPlan(null);
-      setMessage((destination==='vps'?'已加入 VPS 下载队列 ':'已提交转存 ')+(result.tasks?.length||0)+' 项');
-    }catch(exception){failed(exception);}
-    finally{setBusy('');}
-  }
-
-  function actionBody(){
-    return {action,mikan_id:bid,rules:filters,...(chosen.length?{release_ids:chosen}:{})};
-  }
-
-  async function previewLibrary(){
-    setBusy('preview');setError('');setPlan(null);
-    try{setPlan(await post('/library/actions',actionBody()));}
-    catch(exception){failed(exception);}
-    finally{setBusy('');}
-  }
-
-  async function confirmLibrary(){
-    if(!plan?.digest)return;
-    setBusy('confirm');setError('');setMessage('');
-    try{
-      const result=await post('/library/actions',{...actionBody(),digest:plan.digest});
-      setPlan(null);setSelected(new Set());
-      setMessage('已排队 '+(result.tasks?.length||0)+' 项');
-    }catch(exception){
-      if(exception.code==='LIBRARY_PLAN_CHANGED')setPlan(null);
-      failed(exception);
-    }
-    finally{setBusy('');}
-  }
-
-  function startFollowing(group){
-    const groupIds=group?[String(group.subgroupId)]:filters.group_ids;
-    const sourceGroup=groupIds.length===1?groupIds[0]:'0';
-    setFollow({
-      groupIds,sourceGroup,rules:{...filters,group_ids:groupIds,wait_minutes:sourceGroup==='0'?5:0},
-      subscription:currentSubscription(sourceGroup),
-    });
-  }
-
-  function go(path){
-    close();
-    window.location.hash=path;
-    window.scrollTo({top:0,left:0,behavior:'instant'});
-  }
-
-  if(follow)return <FollowModal
-    work={{...work,mikan_id:bid}} subscription={follow.subscription}
-    initialGroups={follow.groupIds} initialRules={follow.rules}
-    sourceGroupId={follow.sourceGroup} close={()=>setFollow(null)}
-    onSaved={()=>setFollow(null)}
-  />;
-
-  return <Modal title={title||data?.title||'选择资源'} close={close} footer={<>
-    <button className="secondary-button m115-follow-entry" disabled={!!busy||!bid} onClick={()=>startFollowing()}>
-      {currentSubscription(filters.group_ids.length===1?filters.group_ids[0]:'0')?'管理追新':'追新'}
-    </button>
-    {bid&&<button className="secondary-button" disabled={!!busy||!matching.length} onClick={previewLibrary}>
-      {busy==='preview'?'匹配中…':chosen.length?'预览所选入库':'预览入库'}
-    </button>}
-    {!!plan?.items?.length&&<button className="primary-button" disabled={!!busy} onClick={confirmLibrary}>
-      {busy==='confirm'?'排队中…':'确认入库'}
-    </button>}
-    {chosen.length>0&&<button className="primary-button" disabled={!!busy} onClick={()=>transfer(chosen)}>
-      {busy==='cloud'?'提交中…':'转存至 115（'+chosen.length+'）'}
-    </button>}
-    {chosen.length>0&&<button className="secondary-button" disabled={!!busy} onClick={()=>transfer(chosen,'vps')}>
-      {busy==='vps'?'提交中…':'下载到 VPS（'+chosen.length+'）'}
-    </button>}
-    <button className="secondary-button" onClick={()=>go('/requests')}>任务</button>
-  </>}>
-    {error&&<Notice error={error}/>}
-    {message&&<Notice>{message}</Notice>}
-    {login&&<button className="primary-button" onClick={()=>go('/login')}>登录</button>}
-    {data?.source_required&&<>
-      <form className="m115-search" onSubmit={search}>
-        <input aria-label="搜索资源" value={term} onChange={event=>setTerm(event.target.value)}/>
-        <button className="primary-button" disabled={!!busy}>搜索</button>
-      </form>
-      <div className="m115-source-list">{sources.map(source=><button
-        className="m115-source" key={source.mikan_id||source.bangumiId}
-        onClick={()=>load(String(source.mikan_id||source.bangumiId))}
-      >{displayTitle(source)}</button>)}</div>
-    </>}
-    {!!groups.length&&<>
-      <section className="m115-resource-filters" aria-label="资源筛选">
-        <FilterChoices label="分辨率" values={filters.resolutions} choices={resolutions}
-          onChange={values=>changeFilters('resolutions',values)}/>
-        <FilterChoices label="字幕" values={filters.versions} choices={subtitleVersions}
-          onChange={values=>changeFilters('versions',values)}/>
-        <details className="m115-resource-group-filter">
-          <summary>字幕组{filters.group_ids.length?' · 已选 '+filters.group_ids.length+' 组':' · 不限'}</summary>
-          <button type="button" className="secondary-button" onClick={()=>changeFilters('group_ids',[])}>全部字幕组</button>
-          <div className="m115-group-options">{groups.map(group=><label key={group.subgroupId}>
-            <input type="checkbox" checked={filters.group_ids.includes(String(group.subgroupId))}
-              onChange={event=>changeFilters('group_ids',event.target.checked
-                ?[...filters.group_ids,String(group.subgroupId)]
-                :filters.group_ids.filter(id=>id!==String(group.subgroupId)))}/>
-            <span>{group.subgroupName}</span>
-          </label>)}</div>
-        </details>
-      </section>
-      <section className="m115-library-actions">
-        <div className="m115-heading">
-          <h3>入库</h3>
-          <select aria-label="入库动作" value={action} onChange={event=>{
-            setAction(event.target.value);setPlan(null);
-          }}>
-            <option value="missing">补缺集</option>
-            <option value="complete">入库全集</option>
-            <option value="upgrade">洗版</option>
-          </select>
-        </div>
-        {plan&&<div className="m115-library-preview">
-          <strong>{plan.items?.length?'将处理 '+plan.items.length+' 项':'暂无匹配资源'}</strong>
-          {plan.missing_episodes?.length>0&&<span>缺集 {plan.missing_episodes.join('、')}</span>}
-          {plan.items?.map(item=><span key={item.release_id}>
-            {item.title} · {(item.episodes||[]).join('、')} 集
-          </span>)}
-        </div>}
-      </section>
-    </>}
-    {shown.map(group=>{
-      const ids=group.resources.map(releaseId).filter(Boolean);
-      const allSelected=ids.length>0&&ids.every(id=>selected.has(id));
-      const following=currentSubscription(group.subgroupId);
-      const isExpanded=expanded.has(String(group.subgroupId));
-      const rows=isExpanded?group.resources:group.resources.slice(0,3);
-      return <section className="m115-resource-group" key={group.subgroupId} aria-label={group.subgroupName}>
-        <div className="m115-resource-group-heading">
-          <h3>{group.subgroupName}<small>{group.resources.length} 项</small></h3>
-          <div className="m115-resource-group-actions">
-            <button type="button" className="secondary-button" aria-pressed={allSelected}
-              disabled={!!busy||!ids.length} onClick={()=>selectGroup(group)}>
-              {allSelected?'取消全选':'全选'}
-            </button>
-            <button type="button" className="secondary-button" disabled={!!busy}
-              onClick={()=>startFollowing(group)}>{following?'管理追新':'追新'}</button>
-          </div>
-        </div>
-        {rows.map(resource=>{
-          const id=releaseId(resource);
-          return <article className="m115-resource" key={id||resource.title}>
-            <label className="m115-resource-select">
-              <input type="checkbox" aria-label={'选择 '+resource.title} checked={selected.has(id)}
-                disabled={!id||!!busy} onChange={()=>toggle(resource)}/>
-            </label>
-            <div><strong>{resource.title}</strong><ReleaseInfo release={resource.release}/>
-              <small>{[resource.size,resource.pubDate].filter(Boolean).join(' · ')}</small>
-            </div>
-            <div className="m115-resource-destinations">
-              <button className="primary-button" disabled={!!busy||!id} onClick={()=>transfer([id])}>转存至 115</button>
-              <button className="secondary-button" disabled={!!busy||!id} onClick={()=>transfer([id],'vps')}>下载到 VPS</button>
-            </div>
-          </article>;
-        })}
-        {group.resources.length>3&&<button type="button" className="secondary-button m115-resource-expand"
-          aria-expanded={isExpanded} onClick={()=>setExpanded(previous=>{
-            const next=new Set(previous);
-            isExpanded?next.delete(String(group.subgroupId)):next.add(String(group.subgroupId));
-            return next;
-          })}>{isExpanded?'收起资源':'查看全部 '+group.resources.length+' 项'}</button>}
-      </section>;
-    })}
-    {busy==='load'&&<Notice>加载中…</Notice>}
-    {data&&!data.source_required&&!shown.length&&busy!=='load'&&<p className="muted">
-      {groups.length?'暂无匹配资源':'暂无资源'}
-    </p>}
-  </Modal>;
+ const {useState,useEffect,useRef}=window.Mikan115Runtime.React;
+ const [data,setData]=useState(null),[filters,setFilters]=useState(emptyFilters),[selected,setSelected]=useState(null);
+ const [expanded,setExpanded]=useState(new Set()),[follow,setFollow]=useState(null),[sources,setSources]=useState([]);
+ const [term,setTerm]=useState(work.homeTitle||work.title||''),[action,setAction]=useState('missing'),[destination,setDestination]=useState('cloud');
+ const [plan,setPlan]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState('load'),[planning,setPlanning]=useState(false);
+ const [message,setMessage]=useState(''),[login,setLogin]=useState(false),[refresh,setRefresh]=useState(0);
+ const lastRefresh=useRef(0),request=useRef(0),invoker=useRef(document.activeElement),subscriptions=useFollowing();
+ const ident=String(work.canonical_id||work.id||work.mikan_id||work.bangumiId||'');
+ const bid=String(data?.bangumi_id||work.mikan_id||work.bangumiId||'');
+ const groups=data?.groups||[],shown=plan?.groups||[],checked=effectiveSelection(selected,plan);
+ const loading=!!busy||planning;
+ const currentSubscription=group=>subscriptions.find(s=>(String(s.bangumi_id)===bid||!!plan?.scope_key&&s.scope_key===plan.scope_key)&&String(s.subgroup_id||'0')===String(group||'0'));
+ function failed(e){setError(e.message);if(e.status===401)setLogin(true);}
+ function body(ids){return {mikan_id:bid,action,destination,rules:filters,...(ids?{release_ids:ids}:selectionBody(selected))};}
+ useEffect(()=>()=>queueMicrotask(()=>{if(invoker.current?.isConnected)invoker.current.focus();}),[]);
+ async function load(source){const sequence=++request.current;setBusy('load');setError('');setPlan(null);setSelected(null);
+  try{const result=await api('/resources?'+new URLSearchParams({work_id:ident,...(source?{bangumi_id:source}:{})}));if(sequence===request.current)setData(result);}
+  catch(e){if(sequence===request.current)failed(e);}finally{if(sequence===request.current)setBusy('');}}
+ useEffect(()=>{load();return()=>{request.current++;};},[ident]);
+ useEffect(()=>{
+  if(!bid||!data||data.source_required||login)return;
+  const controller=new AbortController();let active=true;setPlanning(true);setError('');
+  const timer=setTimeout(async()=>{try{const result=await api('/library/actions',{method:'POST',body:JSON.stringify({...body(),refresh:refresh>lastRefresh.current}),signal:controller.signal});if(active){setPlan(result);lastRefresh.current=refresh;}}
+   catch(e){if(active&&e.name!=='AbortError')failed(e);}finally{if(active)setPlanning(false);}},180);
+  return()=>{active=false;clearTimeout(timer);controller.abort();};
+ },[bid,data,action,destination,filters,selected,refresh,login]);
+ function changeFilters(key,value){setFilters({...filters,[key]:value});setSelected(null);setPlan(null);setMessage('');}
+ function toggle(resource){const next=new Set(checked),id=releaseId(resource);next.has(id)?next.delete(id):next.add(id);setSelected(next);setPlan(null);}
+ function selectGroup(group){const ids=group.resources.map(releaseId);setSelected(selected===null?new Set(ids.every(id=>checked.has(id))?[]:ids):toggleGroupSelection(selected,group.resources));setPlan(null);}
+ async function search(e){e.preventDefault();setBusy('search');setError('');try{const result=await api('/search?q='+encodeURIComponent(term));setSources((result.results||[]).filter(w=>/^\d+$/.test(String(w.mikan_id||w.bangumiId||''))));}catch(e){failed(e);}finally{setBusy('');}}
+ async function submit(ids){if(!plan||loading)return;setBusy('submit');setError('');setMessage('');
+  try{let requestBody=body(ids);const reviewed=ids?await post('/library/actions',requestBody):plan;
+   const result=await post('/library/actions',{...requestBody,digest:reviewed.digest});setSelected(null);setPlan(null);setRefresh(v=>v+1);
+   setMessage((destination==='cloud'?'已提交转存 ':'已加入 VPS 下载队列 ')+(result.tasks?.length||0)+' 项');
+  }catch(e){failed(e);setPlan(null);setRefresh(v=>v+1);}finally{setBusy('');}}
+ function startFollowing(group){const ids=group?[String(group.subgroupId)]:filters.group_ids,sg=ids.length===1?ids[0]:'0';setFollow({ids,sg,rules:{...filters,group_ids:ids,download_to_vps:destination==='vps',wait_minutes:0},subscription:currentSubscription(sg)});}
+ function go(path){close();window.location.hash=path;window.scrollTo({top:0,left:0,behavior:'instant'});}
+ if(follow)return <FollowModal work={{...work,mikan_id:bid}} subscription={follow.subscription} initialGroups={follow.ids} initialRules={follow.rules} sourceGroupId={follow.sg} close={()=>setFollow(null)} onSaved={()=>setFollow(null)}/>;
+ const button=destination==='cloud'?'转存至 115':'下载到 VPS';
+ return <Modal title={work.homeTitle||work.title||work.series_title||data?.title||'选择资源'} close={close} footer={<>
+  <button className="secondary-button" disabled={loading||!bid} onClick={()=>startFollowing()}>{currentSubscription(filters.group_ids.length===1?filters.group_ids[0]:'0')?'管理追新':'追新'}</button>
+  <button className="primary-button" disabled={loading||!plan?.items.length||!plan.inventory_verified} onClick={()=>submit()}>{busy==='submit'?'提交中…':button+'（'+(plan?.selected_episodes.length||0)+' 集）'}</button>
+  <button className="secondary-button" onClick={()=>go('/requests')}>任务</button>
+ </>}>
+  {error&&<Notice error={error}/>} {message&&<Notice>{message}</Notice>}
+  {login&&<button className="primary-button" onClick={()=>go('/login')}>登录</button>}
+  {data?.source_required&&<><form className="m115-search" onSubmit={search}><input aria-label="搜索资源" value={term} onChange={e=>setTerm(e.target.value)}/><button className="primary-button" disabled={loading}>搜索</button></form><div className="m115-source-list">{sources.map(s=><button className="m115-source" key={s.id} onClick={()=>load(String(s.mikan_id||s.bangumiId))}>{displayTitle(s)}</button>)}</div></>}
+  {!!groups.length&&<>
+   <section className="m115-resource-filters" aria-label="资源筛选">
+    <FilterChoices label="分辨率" values={filters.resolutions} choices={resolutions} onChange={v=>changeFilters('resolutions',v)}/>
+    <FilterChoices label="字幕" values={filters.versions} choices={subtitleVersions} onChange={v=>changeFilters('versions',v)}/>
+    <details className="m115-resource-group-filter"><summary>字幕组{filters.group_ids.length?' · 已选 '+filters.group_ids.length+' 组':' · 不限'}</summary><button className="secondary-button" onClick={()=>changeFilters('group_ids',[])}>全部字幕组</button><div className="m115-group-options">{groups.map(g=><label key={g.subgroupId}><input type="checkbox" checked={filters.group_ids.includes(String(g.subgroupId))} onChange={e=>changeFilters('group_ids',e.target.checked?[...filters.group_ids,String(g.subgroupId)]:filters.group_ids.filter(v=>v!==String(g.subgroupId)))}/><span>{g.subgroupName}</span></label>)}</div></details>
+   </section>
+   <section className="m115-library-actions" aria-label="收集方式">
+    <div className="m115-destination-tabs" role="group" aria-label="保存位置">{[['cloud','转存至 115'],['vps','下载到 VPS']].map(([key,label])=><button type="button" key={key} aria-pressed={destination===key} disabled={!!busy} onClick={()=>{setDestination(key);setSelected(null);setPlan(null);setMessage('');}}>{label}</button>)}</div>
+    <div className="m115-heading"><h3>{destination==='cloud'?'115 网盘':'VPS 文件'}</h3><select aria-label="入库动作" value={action} onChange={e=>{setAction(e.target.value);setSelected(null);setPlan(null);setMessage('');}}>
+     <option value="missing" title="只收集已播出且缺少的剧集">补缺集</option><option value="complete" title="收集当前可用剧集，跳过已有剧集">收集全部</option><option value="upgrade" title="为已有剧集收集所选版本，保留原文件">洗版</option></select></div>
+    {plan&&<div className="m115-inventory-summary"><span title={episodeRanges(plan.owned_episodes)}>已有 {plan.owned_episodes.length} 集</span><span title={episodeRanges(plan.pending_episodes)}>处理中 {plan.pending_episodes.length} 集</span><span title={episodeRanges(plan.missing_episodes)}>缺少 {plan.missing_episodes.length} 集</span><button className="m115-text-button" disabled={loading} onClick={()=>{setPlan(null);setRefresh(v=>v+1);}}>刷新库存</button></div>}
+    {plan?.missing_episodes.length>0&&<p className="m115-episode-list">缺集 {episodeRanges(plan.missing_episodes)}</p>}
+    {plan?.inventory_error&&<Notice error={plan.inventory_error}/>}
+    {plan?.unknown_resources>0&&<span className="muted">集号未确认 {plan.unknown_resources} 项</span>}
+   </section>
+  </>}
+  {shown.map(group=>{const ids=group.resources.map(releaseId),all=ids.every(id=>checked.has(id)),open=expanded.has(String(group.subgroupId));return <section className="m115-resource-group" key={group.subgroupId} aria-label={group.subgroupName}>
+   <div className="m115-resource-group-heading"><h3>{group.subgroupName}<small>{group.episode_count} 集 · {group.resources.length} 项</small></h3><div className="m115-resource-group-actions"><button className="secondary-button" aria-pressed={all} disabled={loading} onClick={()=>selectGroup(group)}>{all?'取消全选':'全选'}</button><button className="secondary-button" disabled={loading} onClick={()=>startFollowing(group)}>{currentSubscription(group.subgroupId)?'管理追新':'追新'}</button></div></div>
+   {(open?group.resources:group.resources.slice(0,3)).map(resource=>{const id=releaseId(resource);return <article className="m115-resource" key={id}><label className="m115-resource-select"><input type="checkbox" aria-label={'选择 '+resource.title} checked={checked.has(id)} disabled={loading} onChange={()=>toggle(resource)}/></label><div><strong>{resource.title}</strong><ReleaseInfo release={resource.release}/><small>{[resource.size,resource.pubDate].filter(Boolean).join(' · ')}</small></div><div className="m115-resource-destinations"><button className="secondary-button" disabled={loading||!plan.inventory_verified} onClick={()=>submit([id])}>{button}</button></div></article>;})}
+   {group.resources.length>3&&<button className="secondary-button m115-resource-expand" aria-expanded={open} onClick={()=>setExpanded(previous=>{const next=new Set(previous);open?next.delete(String(group.subgroupId)):next.add(String(group.subgroupId));return next;})}>{open?'收起资源':'查看全部 '+group.resources.length+' 项'}</button>}
+  </section>;})}
+  {(busy==='load'||planning)&&<Notice>核对中…</Notice>}
+  {plan&&!shown.length&&!planning&&<p className="muted">{action==='upgrade'?'暂无可洗版资源':plan.missing_episodes.length?'暂无匹配资源':'暂无待收集剧集'}</p>}
+ </Modal>;
 }

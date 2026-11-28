@@ -384,9 +384,11 @@ class Library:
         return self._process(row)
 
     def tick(self,limit=1):
+        if self.store.setting('update_maintenance')=='1':return []
         self.enqueue_requests()
         results=[]
         for _ in range(max(0,int(limit))):
+            if self.store.setting('update_maintenance')=='1':break
             row=self._claim()
             if not row:break
             results.append(self._process(row))

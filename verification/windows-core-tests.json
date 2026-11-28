@@ -1,0 +1,998 @@
+{
+  "verified_utc": "2026-11-28T06:52:34.494447+00:00",
+  "python": "3.12.14",
+  "tests_run": 237,
+  "success": true,
+  "cases": [
+    {
+      "name": "tests.test_alist_provision.AlistProvisionTests.test_create_without_id_rereads_owned_mount_and_waits_for_work",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_alist_provision.AlistProvisionTests.test_optional_kid_added_by_alist_is_allowed_but_required_fields_must_match",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_alist_provision.AlistProvisionTests.test_preflight_requires_official_115_cloud_driver",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_alist_provision.AlistProvisionTests.test_reserved_mount_reports_missing_managed_and_tampered",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_alist_provision.AlistProvisionTests.test_unrelated_mount_is_never_taken_over",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.AutomaticPresentation.test_backdrop_known_to_contain_text_is_not_restored",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.AutomaticPresentation.test_configured_tmdb_warms_all_exact_assets_without_opening_a_page",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.AutomaticPresentation.test_legacy_empty_synopsis_and_empty_gallery_do_not_mask_verified_sources",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.AutomaticPresentation.test_next_quarter_warms_public_assets_before_the_first_detail_visit",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_automatic_presentation.ChineseTranslations.test_traditional_chinese_is_used_when_simplified_chinese_is_missing",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_compound_subject_does_not_keep_parent_as_confirmed_work",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_conflicting_kind_with_same_tmdb_id_stays_unresolved",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_conflicting_tmdb_target_keeps_existing_link",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_corrected_source_identity_drops_stale_original_title_and_score",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_episode_scope_with_conflicting_season_does_not_keep_episode",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_episode_scoped_special_keeps_its_scope",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_exact_fribb_crosswalk_supplies_tvdb_id_and_separate_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_exact_source_bridge_supplies_season_and_aliases",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_film_consensus_does_not_confuse_parent_tv_special",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_missing_sources_preserve_existing_conflict",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_multi_film_subject_is_not_replaced_by_first_movie",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_multiple_episode_scopes_do_not_select_one_episode",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_multiple_seasons_are_not_arbitrarily_selected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_multiple_subject_bridges_do_not_choose_first_bangumi_id",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_similar_title_without_explicit_source_id_is_never_merged",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.IdentityRegression.test_zero_episode_is_not_a_concrete_episode_scope",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.PersistentUpdates.test_failed_update_keeps_previously_cached_quarter",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.PersistentUpdates.test_new_mikan_details_are_resolved_by_explicit_bangumi_id",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.PersistentUpdates.test_new_seed_replaces_stale_public_overlay_and_preserves_runtime_only_work",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.PersistentUpdates.test_new_work_and_fuzzy_alias_survive_restart",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.PersistentUpdates.test_rollover_prioritizes_current_and_upcoming_without_fixed_year",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.PersistentUpdates.test_tmdb_missing_art_keeps_original_mikan_cover",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.SearchRegression.test_aliases_traditional_chinese_and_case_width",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.SearchRegression.test_empty_or_unrelated_search_has_no_rankings",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.SearchRegression.test_partial_chinese_and_missing_particles",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_catalog_completion.SearchRegression.test_single_typo_does_not_change_original_identity",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_alist_failure_after_publish_recovers_cleanup_and_clears_stale_error",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_alist_parent_cache_is_refreshed_before_new_series_path_is_used",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_cloud_only_does_not_download_and_exact_series_id_combines_seasons",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_directory_creation_timeout_recovers_marker_without_duplicate_series",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_episode_link_does_not_limit_series_collection_to_first_episode",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_episode_link_fetches_exact_parent_season_for_other_release_episodes",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_name_collision_and_foreign_file_never_overwritten_or_downloaded",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_owned_old_root_migrates_and_unrelated_root_is_preserved",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_resource_vps_action_waits_then_moves_renamed_file_and_downloads_exact_bytes",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_same_title_different_confirmed_id_creates_separate_series",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_shared_local_series_never_adopts_an_untracked_equal_size_file",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_simultaneous_rss_and_manual_vps_dispatch_create_one_local_job",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_timeout_after_move_reconciles_same_file_id_after_restart",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_cloud_layout.SeriesLayout.test_unconfirmed_episode_preserves_original_and_waits_for_review",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkCatalog.test_conflicted_or_multiple_work_identity_has_no_artwork",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkCatalog.test_new_season_stops_unscoped_first_season_logo_and_preserves_generic_verified_mark",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkCatalog.test_refresh_is_nonblocking_coalesced_and_retains_stale_art_on_failure",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkCatalog.test_refreshed_gallery_overrides_legacy_art_without_replacing_season_or_ratings",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkCatalog.test_season_specific_logo_cannot_be_used_by_another_season_or_after_refresh",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkCatalog.test_seed_logo_uses_exact_tmdb_id_and_media_type_without_changing_other_data",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkCatalog.test_steel_ball_run_uses_reviewed_season_six_logo_and_never_stone_ocean",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkCatalog.test_unreviewed_multi_season_logo_is_not_guessed_from_gallery_ranking",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkSelection.test_empty_gallery_does_not_reintroduce_title_art_or_portrait_fallback",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkSelection.test_images_api_explicitly_requests_japanese_and_neutral_images",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkSelection.test_legacy_backdrop_and_logo_urls_cannot_use_other_hosts_or_bare_logo_language",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_detail_artwork.ArtworkSelection.test_only_neutral_landscape_backgrounds_and_japanese_logos_are_selected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.FeedAdapters.test_base32_magnet_namespaced_hash_and_atom_are_parsed",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.FeedAdapters.test_supported_search_links_are_canonicalized_and_unsafe_sources_rejected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.FeedAdapters.test_torrent_fetch_does_not_proxy_arbitrary_hosts_or_routes",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.FeedAdapters.test_work_page_fragment_must_be_an_actual_rss_subgroup",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.SharedFollowing.test_creation_cutoff_and_explicit_history_opt_in",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.SharedFollowing.test_external_rss_requires_explicit_tmdb_work_and_uses_canonical_title",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.SharedFollowing.test_feed_matching_reuses_one_work_season_lookup_for_a_batch",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.SharedFollowing.test_home_and_other_rss_sources_share_durable_claims",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.SharedFollowing.test_home_queue_race_does_not_duplicate_external_rss_episode",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_feed_sources.SharedFollowing.test_wrong_work_ambiguous_sequel_and_unknown_episode_do_not_submit",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_all_groups_accepts_new_group_and_version_dedup_keeps_both",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_create_before_connection_and_preview_never_submit",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_cross_subscription_episode_dedup_and_restart",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_editing_rule_reconsiders_filtered_items",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_explicit_rss_group_is_not_overwritten_by_ambiguous_hash_cache",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_http_ownership_admin_scope_and_csrf",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_known_group_is_resolved_without_an_extra_resource_page_request",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_pause_remove_and_rule_revision_stop_enqueue",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_personal_feed_token_encrypted_and_not_returned",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_preferred_later_candidate_shares_original_wait_window",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_priority_selects_one_group_and_preserves_rejection_reasons",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_publisher_id_is_translated_to_rss_group_id_by_explicit_page_link",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_rss_item_carries_only_confirmed_tmdb_tvdb_crosswalk",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_rss_opt_in_runs_separate_vps_download_after_rename",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_same_guid_changed_hash_is_new_but_same_hash_changed_guid_is_not",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_unassigned_group_label_is_not_the_subscription_button",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Following.test_untrusted_feed_urls_and_xml_entities_are_rejected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Labels.test_absolute_offset_matches_explicit_season_episode_without_double_offset",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Labels.test_chinese_and_english_subtitle_combinations",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Labels.test_different_works_and_subtitle_variants_have_distinct_scopes",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Labels.test_episode_ranges_revision_and_special_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Labels.test_invalid_rules_and_impossible_range_rejected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Labels.test_keyword_rules_are_literal_and_batches_require_opt_in",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Labels.test_old_subscription_schema_is_migrated_without_deleting_rows",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Naming.test_absolute_release_and_relative_file_get_one_correct_episode_number",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Naming.test_ambiguous_response_is_reconciled_without_second_rename",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Naming.test_automatic_rename_unknown_episode_keeps_original_and_reports_reason",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Naming.test_collision_and_tampered_path_do_not_rename",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Naming.test_invalid_digest_and_non_owner_cannot_rename",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Naming.test_preview_then_rename_keeps_scope_sidecars_and_download_bytes",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Naming.test_resource_file_episode_mismatch_is_kept_unchanged",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.Naming.test_tmdb_episode_fallback_requires_exact_link_and_episode",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.SonarrContract.test_configuration_encrypted_and_exact_tvdb_episode_required",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.SonarrContract.test_http_sonarr_lookup_accepts_only_explicit_json_array_mode",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.SonarrContract.test_managed_credentials_are_runtime_only_and_empty_library_is_safe",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_following_and_naming.SonarrContract.test_tvdb_season_is_used_when_crosswalk_differs_from_tmdb_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_inventory_actions.InventoryActions.test_cloud_missing_hides_owned_episode42_without_any_vps_download",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_inventory_actions.InventoryActions.test_empty_selection_means_no_jobs_and_changed_inventory_invalidates_confirmation",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_inventory_actions.InventoryActions.test_first_collection_missing_can_find_releases_before_local_library_exists",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_inventory_actions.InventoryActions.test_missing_and_complete_have_distinct_airdate_behavior_and_skip_pending",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_inventory_actions.InventoryActions.test_only_existing_episodes_are_offered_for_upgrade_and_original_is_kept",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_inventory_actions.InventoryActions.test_same_hash_cannot_rebind_a_different_confirmed_work",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_inventory_actions.InventoryActions.test_vps_mode_reuses_owned_cloud_file_without_a_second_transfer",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_completed_task_accepts_incremental_file_ids_without_new_task",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_failed_enqueue_is_idempotent_and_requeued",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_following_revision_and_pause_are_checked_at_queue_transaction",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_no_paths_or_unconfirmed_mikan_id_are_accepted",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_no_vps_task_reports_idle_availability",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_queue_is_persistent_and_summary_uses_explicit_file_ids",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_size_mismatch_does_not_commit_partial_file",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_summary_counts_only_real_video_files_and_supports_episode_formats",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_tick_processes_claimed_queue_once",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_library.LibraryTests.test_untrusted_filename_is_rejected_before_queue_creation",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_bulk_http_requires_csrf_and_revalidates_input",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_bulk_route_accepts_bounded_large_paste_without_raising_other_route_limits",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_confirmed_work_merges_same_episode_mirrors_into_one_task",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_conflicting_names_for_one_magnet_require_review",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_empty_selection_does_not_create_tasks_and_vps_intent_is_separate",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_multiple_links_parse_groups_versions_and_duplicate_btih",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_nameless_link_can_reuse_exact_hash_labels_without_guessing_work_id",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_preview_has_no_cloud_side_effect_and_unknowns_are_not_guessed",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_magnet_import.MagnetImports.test_raw_hashes_are_not_merged_by_similar_titles_or_guessed_ids",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_cached_schedule_detail_and_search_use_the_exact_title",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_no_title_or_metadata_request_for_unresolved_scope",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_offline_special_title_keeps_its_exact_episode_number",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_shared_mikan_id_cannot_switch_the_selected_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.CatalogTitles.test_tmdb_lookup_does_not_return_the_first_season_for_every_request",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.FastHistory.test_cached_cast_details_are_available_without_a_tmdb_key",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.FastHistory.test_cold_history_returns_seed_without_waiting_for_slow_upstream",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.FastHistory.test_parallel_history_requests_share_one_refresh",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.FastHistory.test_second_season_identity_and_three_scores_survive_detail_lookup",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.FastHistory.test_stale_history_remains_usable_when_refresh_fails",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_absent_second_season_never_borrows_first_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_api_key_and_bearer_authentication_are_encrypted_and_never_returned",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_episode_scope_queries_only_the_explicit_episode",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_invalid_key_does_not_replace_working_credentials_or_leak",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_no_confirmed_season_only_loads_series_metadata",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_second_season_uses_exact_season_poster_and_episodes",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataContract.test_special_season_zero_is_not_changed_into_first_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataHTTPRoutes.test_gzip_static_response_and_etag_revalidation_keep_exact_content",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataHTTPRoutes.test_rejected_origin_does_not_poison_the_next_keepalive_request",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_metadata_and_loading.MetadataHTTPRoutes.test_settings_roundtrip_masks_key_and_requires_admin_and_csrf",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.ArtworkLanguage.test_only_japanese_portrait_poster_is_selected_for_the_exact_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.ArtworkLanguage.test_single_season_episode_label_omits_first_season",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.LocalizedCatalog.test_chinese_alias_of_same_subject_is_a_fallback_for_a_japanese_title",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.LocalizedCatalog.test_detail_accepts_chinese_synopsis_and_suppresses_foreign_one",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.LocalizedCatalog.test_home_uses_chinese_title_and_season_poster_even_for_old_schedule_cache",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_presentation.LocalizedCatalog.test_sequel_does_not_borrow_first_season_poster_or_lose_its_number",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_blank_legacy_cache_is_refreshed_and_invalid_cover_is_rejected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_cover_allowlist_rejects_credentials_queries_fragments_and_zero",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_exact_bangumi_id_fetches_and_caches_chinese_summary",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_foreign_summary_does_not_replace_stale_chinese_text",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_invalid_ids_never_call_public_source",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_keeps_chinese_when_bangumi_includes_the_japanese_original",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_same_response_caches_exact_cover_without_duplicate_fetch",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_upstream_failure_keeps_stale_text_and_uses_retry_window",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_presentation.PublicOverviewTests.test_wrong_id_response_is_not_cached",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_public_restore.PublicRestore.test_restoration_keeps_seasons_scores_and_private_data_separate",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_resource_selection.ResourceSelection.test_batch_revalidates_group_resolution_and_subtitle_on_server",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_resource_selection.ResourceSelection.test_group_rss_follows_only_matching_future_releases",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_resource_selection.ResourceSelection.test_group_specific_rss_rejects_other_group_rules_when_creating_and_editing",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_resource_selection.ResourceSelection.test_library_plan_uses_current_filters_and_selected_resource_ids",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceConnections.test_automatic_alist_gets_and_renews_its_token_without_ck",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceConnections.test_custom_alist_is_encrypted_and_blank_password_is_retained_only_for_same_server",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceConnections.test_deployment_setup_is_repeatable_and_preserves_credentials",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceConnections.test_failed_custom_auth_preserves_existing_connection",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceConnections.test_first_start_never_prints_the_private_setup_token",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceConnections.test_restoring_automatic_ignores_old_manual_token",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceConnections.test_sonarr_custom_detects_version_and_can_restore_generated_credentials",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceConnections.test_sonarr_saved_configuration_does_not_claim_healthy_when_service_is_down",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceHTTPAuthorization.test_active_cloud_transfer_blocks_alist_switch_but_allows_health_check",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_service_connections.ServiceHTTPAuthorization.test_custom_settings_require_admin_and_csrf",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_static_and_catalog.FrontendAndCatalog.test_active_bundle_has_new_routes_and_no_legacy_account_or_approval_ui",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_static_and_catalog.FrontendAndCatalog.test_mikan_square_thumbnail_keeps_original_poster_aspect_ratio",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_static_and_catalog.FrontendAndCatalog.test_relative_mikan_original_cover_uses_the_provider_origin",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_static_and_catalog.FrontendAndCatalog.test_seed_fallback_does_not_guess_unknown_weekday",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_tracking_catalog.TrackingIdentity.test_explicit_chinese_and_english_seasons_preserve_unknown_part_numbers",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_tracking_catalog.TrackingIdentity.test_explicit_tmdb_season_selection_persists_exact_ids_and_canonical_title",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateAuthorization.test_admin_and_csrf_required_for_update_actions",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_bad_hash_and_truncated_manifest_never_become_ready",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_code_deletions_are_reflected_in_next_snapshot",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_failed_start_restores_partial_database_changes_and_previous_code",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_incremental_text_reuse_accepts_windows_line_endings",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_interrupted_activation_recovers_database_before_work_starts",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_missing_backup_never_creates_an_empty_database_or_replaces_current_data",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_only_changed_blobs_download_and_private_state_is_untouched",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_requirements_are_pinned_and_dependency_install_is_automatic",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_supervisor_switches_versions_and_keeps_database_key_and_downloads",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_switch_waits_for_active_task_lease",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_symlink_files_and_case_collisions_are_rejected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_updates.UpdateSnapshots.test_update_requires_supervisor_and_settings_validate_types",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_alist_cookie_changed_to_another_session_is_detected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_ambiguous_submit_is_reconciled_without_resubmission",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_bootstrap_cannot_create_second_admin",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_cancel_rss_between_resolution_and_enqueue_prevents_new_task",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_ck_saved_when_alist_unavailable_then_reused",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_cloud_rejection_redacts_cookie",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_confirmed_completion_survives_upstream_task_record_cleanup",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_crash_before_persisted_folder_safely_resumes_preparation",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_duplicate_clicks_and_concurrent_requests_submit_once",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_expired_cookie_pauses_and_never_qr_logs_in",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_incomplete_cloud_task_cannot_be_downloaded",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_invalid_cookie_and_root_storage_never_created",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_local_password_change_revokes_all_sessions",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_local_password_csrf_and_private_credentials",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_mutated_alist_root_fails_closed_before_transfer",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_no_caller_selected_destination",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_original_approval_and_media_login_routes_removed",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_other_user_cannot_read_or_download_private_task",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_path_traversal_from_file_listing_not_exposed",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_private_mount_permission_tamper_is_detected",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_range_download_keeps_alist_proxy_and_exact_bytes",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_recreate_managed_alist_mount_after_restart",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_restart_recovers_inflight_without_new_cloud_submission",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_rss_only_new_items_direct_transfer_and_dedup",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_same_magnet_in_daily_folder_is_not_moved_or_overwritten",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_saved_file_path_cannot_escape_dedicated_task",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_stable_release_batch_to_vps_library",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_unknown_submit_without_remote_record_never_resends",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_web_resource_to_cloud_to_alist_download_bytes",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.ClosedLoop.test_without_ck_worker_never_contacts_alist_or_115",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.PureContract.test_magnet_base32_identity_and_ambiguous_rejection",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.PureContract.test_passwords_are_salted_and_not_reversible_plaintext",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.PureContract.test_third_party_cookie_preserves_identity_and_optional_kid",
+      "result": "passed"
+    },
+    {
+      "name": "tests.test_workflow.PureContract.test_torrent_hashes_exact_info_bytes_and_rejects_bad_structure",
+      "result": "passed"
+    }
+  ],
+  "environment": "local-only HTTP mock services, artificial cookies and local test accounts",
+  "real_115_login": false,
+  "real_115_cloud_transfer": false,
+  "real_alist_115_storage_login": false,
+  "closed_loop": "Mikan mock page -> selected resource -> local account authorization -> 115 cloud task via AList protocol -> task polling -> AList scoped file listing -> authenticated proxy byte stream and hash/range checks",
+  "file_hashes": {
+    "mikan115/alist.py": "e051cf3f6b0b48758e93750157a0044d2c247da885edb7a95d4937ce5180de50",
+    "mikan115/auth.py": "0476fde889d03bf7aad2b65184f99c44e9812bafe9e482ee983712096aa0ec31",
+    "mikan115/batch.py": "9e6ec286d57e59fe08fc1959b05baee358ef0b8b9825dda465b3225afbb3451c",
+    "mikan115/catalog.py": "5276c72bfdae34ddebe59be2b7a958d6a849994d679d19d95df3a003f87625fa",
+    "mikan115/catalog_sync.py": "65c5e36dacb06fbd223d2ebaae8759bde79240048fd03baa8a8d0c3c63738fd9",
+    "mikan115/cloud_layout.py": "e7f518159e4607235f43c5efe8fa640dc68e01e2b603cb37e6d79fb2f4ec016f",
+    "mikan115/config.py": "e7fc7a2fbfc857321a03739a0cd42818442feb44fff32b1ebb4839b91dc1e36e",
+    "mikan115/errors.py": "0d16ff3d29664623429e5e4ea2f66962765e6a6410afe38879a8f7d530d025a6",
+    "mikan115/feed_matching.py": "c747619b8315e17b8f70a5c7ad19c321fba3209b7c14ee35f4483bd2b0d3b90d",
+    "mikan115/feed_sources.py": "535aa3ce37c7af4db1670ca8cf3b37492766343130c88d093d8f76181f517400",
+    "mikan115/following.py": "6c6fbe99b69592ca5dd8df515aa01c97142f39e6dd7d60a9951bcdf79a1b0658",
+    "mikan115/http_client.py": "7624434c4bf47476720c0a491adeccf295c1c70592bb414deda339dded95c7a9",
+    "mikan115/inventory.py": "8e3aca1c959c6cd8f3fd5442377a4b975ae1c6d537f429c974583f8640ab5b9d",
+    "mikan115/library.py": "9a1bd7d02df4435afd391887118217c756f47b782a7ac7096b9d59d1c6e0f58a",
+    "mikan115/magnet_import.py": "b484d5db9aaa48fd34934270d38784ebc87d5b63f81ba5b5445cee78cbb17615",
+    "mikan115/metadata.py": "b215d78e9168c5dcf3cc969c8f74b70ed9d5cb64b3fe5dfc963ba1ea3e088c24",
+    "mikan115/mikan_parser.py": "f65d3c9e95b8e63ec2befee55b7b68be212f4ee52d7dcc476f12b597cb985456",
+    "mikan115/organizer.py": "d7bae05ba21264d0618464bf898ff1351590c181912d80ca3e9a2768c8d00452",
+    "mikan115/pan115.py": "625384d7d4ca3bac14111c8bd59c92826ff3dc9e45581667d7a4947d9635fe0a",
+    "mikan115/presentation.py": "db2587dcf9664b90514f6b435b24e38db3fbdc338a4de3dc1a795d82b35f6e16",
+    "mikan115/public_presentation.py": "4350acb816760f0ff330ea8d39b06b22a85bfcaf5371e39150967bf7f08b7a88",
+    "mikan115/releases.py": "38586e2c2fb662394c09dd40f5b82f2c07f800b26fb52f30a46355c3a111e6ff",
+    "mikan115/rss.py": "11cbcb3dc0bdc2f35e38205f386d6c0a97908d7f2e5c61a2ecb9efdb99eda749",
+    "mikan115/search.py": "8f017a8e5669a43bedad32dd6b3d99a0fcb5ce31d803db892044c2fb2868fc56",
+    "mikan115/server.py": "d8f1dc6fc56810c69234ee5b46e905b75cef4f094696348720f3517ac2131a1a",
+    "mikan115/sonarr.py": "4107512ae13b988245d01ee76d217bb5c353659410e44f2268a10ae1676c7b2b",
+    "mikan115/store.py": "5a4fe31ccc101718e18080770921bda21a14f8855235bb9f0c5bf2f8cca3e615",
+    "mikan115/supervisor.py": "f42f5673e5ff6c6ce18d0cde8411d26b7e3493c8ad40c14745e261af831daa36",
+    "mikan115/torrent.py": "c823fa17b1ed208bee27b0382096b8b11d3fa8640aa494fe0d2e11ef955cc85d",
+    "mikan115/tracking_catalog.py": "32a432c0801d4c4c91d315b34d1cf1a465f7275648957ebff99d55c0190706da",
+    "mikan115/updater.py": "6be40a02290dd3c1f8e0331771df9ab85aa6a5c9a193dbc649caae4f14d5ff24",
+    "mikan115/workflow.py": "4bf26a41865daabe0597e405536d5f05f636f6c41ad93de4c6d3f812b9adad06",
+    "mikan115/__init__.py": "76cc8c988f15dfe1edb00c35815cba83409b22cb00ba60e592a90e16b11ad8b4",
+    "static/assets/mikan115-app.js": "914ae28a12936f2489e53c4ffc0dc4b154fae793999afe408e4f9767987913af",
+    "static/mikan115-ui.js": "0d004826a47f9568cc5c49ef01bbb7e92cc38cebd8c890389c9063758703c068"
+  }
+}

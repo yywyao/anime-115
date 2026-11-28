@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "scope": "Read-only existing 115 inventory, local API previews and desktop/mobile browser checks.",
+  "new_cloud_tasks": 0,
+  "real_115_login": false,
+  "vps_download_started": false,
+  "verified_cloud_episodes": [
+    42
+  ],
+  "vps_owned_episodes": [],
+  "browser": {
+    "success": true,
+    "results": [
+      {
+        "device": "desktop",
+        "cloud_owned_episode42_hidden": true,
+        "vps_episode42_available": true,
+        "incremental_update_supervisor_ready": true,
+        "multiple_magnet_input": true,
+        "cloud_rows_rendered": 15,
+        "horizontal_overflow": false,
+        "page_errors": 0
+      },
+      {
+        "device": "mobile",
+        "cloud_owned_episode42_hidden": true,
+        "vps_episode42_available": true,
+        "incremental_update_supervisor_ready": true,
+        "multiple_magnet_input": true,
+        "cloud_rows_rendered": 15,
+        "horizontal_overflow": false,
+        "page_errors": 0
+      }
+    ]
+  }
+}

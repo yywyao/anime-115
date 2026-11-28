@@ -30,6 +30,7 @@ with tempfile.TemporaryDirectory(prefix='mikan115-ui-',dir=root.parent) as temp:
     catalog.seed=pathlib.Path(temp)/'nonexistent-seed.sqlite'
     pan=lambda ck:Pan115(ck,LocalOnlyHTTP(3),my_base=mock.base+'/115-user',web_base=mock.base+'/115-web',offline_base=mock.base+'/115-offline')
     app=Application(config,store=store,alist=alist,pan_factory=pan,catalog=catalog)
+    app.rss.feeds.http=LocalOnlyHTTP(3);app.updates.http=LocalOnlyHTTP(3)
     if a.test_account:
         from tests.test_metadata_and_loading import TMDBHTTP
         catalog.metadata.http=TMDBHTTP()
@@ -44,6 +45,7 @@ with tempfile.TemporaryDirectory(prefix='mikan115-ui-',dir=root.parent) as temp:
                  'backdrop_url':'https://image.tmdb.org/t/p/original/ht6WUmez8cFbwlrFmGdjbYyn3RG.jpg',
                  'ratings':{'tmdb':8.6,'bangumi':7.4,'mal':8.42},'provider_ids':{'mal':'64534','bangumi':'665390'},'tmdb_id':77,'tmdb_season':2,'tmdb_mapping':{'status':'linked','type':'tv','id':77,'season':2},
                  'episodes':[{'id':1,'season_number':2,'episode_number':1,'title':'验收首集','air_date':'2026-10-01','overview':'测试剧集资料。'}]}
+        if a.resource_demo:fixture['episodes']=[{'id':number,'season_number':2,'episode_number':number,'title':f'验收第 {number} 集','air_date':'2026-10-01'} for number in range(1,9)]
         for season in ['秋','夏']:
             value={**fixture,'id':'catalog~fixture'+season,'canonical_id':'catalog~fixture'+season}
             db.execute('INSERT INTO works VALUES(?,?,?,?,?,?,?)',(value['id'],'236',value['title'],2026,season,4,json.dumps(value,ensure_ascii=False)))
