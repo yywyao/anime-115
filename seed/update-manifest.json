@@ -1,0 +1,235 @@
+{
+  "files": {
+    "mikan115/__init__.py": {
+      "sha": "0e37473aeeaa8204d2d38fd70f5e6cc9d843003a",
+      "size": 87
+    },
+    "mikan115/alist.py": {
+      "sha": "0ce9ddc38247a30465231082e7f963e4a8569433",
+      "size": 18191
+    },
+    "mikan115/auth.py": {
+      "sha": "194825941ab555e17066a81d8686ff711394dd3c",
+      "size": 5243
+    },
+    "mikan115/batch.py": {
+      "sha": "122b40f2e71931f15506d9f5d34cafa3f33e92c2",
+      "size": 11932
+    },
+    "mikan115/catalog.py": {
+      "sha": "31d3ce90b84b00d238d8d8c51ec415ff415d9962",
+      "size": 53348
+    },
+    "mikan115/catalog_sync.py": {
+      "sha": "08cef804516225845a6f893212753f3efa8a1367",
+      "size": 15487
+    },
+    "mikan115/cloud_layout.py": {
+      "sha": "ec774c61970c69b4246facab6d76a9250cac1a2c",
+      "size": 17696
+    },
+    "mikan115/config.py": {
+      "sha": "5849f7877b6478c5c0c88e8510ce9cb79f639a0b",
+      "size": 2522
+    },
+    "mikan115/errors.py": {
+      "sha": "d26159bf584fe65890e7d508bed6ce3653f23a01",
+      "size": 457
+    },
+    "mikan115/feed_matching.py": {
+      "sha": "86653a83b247b779832372a3da581765744d1c5f",
+      "size": 3070
+    },
+    "mikan115/feed_sources.py": {
+      "sha": "d91195aac19686fd49ed0c3ae5640d78fc49a23b",
+      "size": 11824
+    },
+    "mikan115/following.py": {
+      "sha": "4d0a6fb509dd106fa1b0665fb6827afc6c89ba5d",
+      "size": 37826
+    },
+    "mikan115/http_client.py": {
+      "sha": "e20c71a79376f8483a892040b4697e9ceb3b63ea",
+      "size": 2699
+    },
+    "mikan115/inventory.py": {
+      "sha": "0420742179e6841c12d05f69191cb3cf9cbea90d",
+      "size": 9570
+    },
+    "mikan115/library.py": {
+      "sha": "68beb1a97e3b3a4ec075790f01edde927813a4fc",
+      "size": 30241
+    },
+    "mikan115/magnet_import.py": {
+      "sha": "8e5ccb9d9854d3bc3a93d35da697d1555029cecf",
+      "size": 9966
+    },
+    "mikan115/metadata.py": {
+      "sha": "3ac4bf661d4505fa524ed3df2680596e9caecc35",
+      "size": 13447
+    },
+    "mikan115/mikan_parser.py": {
+      "sha": "6fc387b4d796b07f588bdcae0636b837f258f0db",
+      "size": 12167
+    },
+    "mikan115/organizer.py": {
+      "sha": "4b3a47ee052a443a035c667b875286ce4dfa6d2a",
+      "size": 13880
+    },
+    "mikan115/pan115.py": {
+      "sha": "c54844e39cd7a39d8435302f1641ae76080b5913",
+      "size": 8497
+    },
+    "mikan115/presentation.py": {
+      "sha": "29e66e6bf041d0e7bae0a97f683e3aa5f5d5bbe3",
+      "size": 1847
+    },
+    "mikan115/public_presentation.py": {
+      "sha": "1ea842e5047de72e8b4df1b9f78a3364dee7cc7f",
+      "size": 5798
+    },
+    "mikan115/releases.py": {
+      "sha": "9c6edefd137165dbac2b71f7f402807cf8fb3e90",
+      "size": 8647
+    },
+    "mikan115/rss.py": {
+      "sha": "60fed9afa67e2ad2c9c8cca0849a88997afb0622",
+      "size": 90
+    },
+    "mikan115/search.py": {
+      "sha": "79d1701a265929c1417d868bab51324ae42ec679",
+      "size": 1975
+    },
+    "mikan115/server.py": {
+      "sha": "b7cdedc9afc2738a9abe3e3f08fe66d3894602c6",
+      "size": 31198
+    },
+    "mikan115/sonarr.py": {
+      "sha": "af4a42f88e2d68b07fc58f4138efeb585a0eda18",
+      "size": 6068
+    },
+    "mikan115/store.py": {
+      "sha": "7d1a83b5bad4ec006c9684006d92441e32e2a1d6",
+      "size": 10935
+    },
+    "mikan115/supervisor.py": {
+      "sha": "2d0f5b880b251329c220e5bfadfbe25b68bf622e",
+      "size": 9219
+    },
+    "mikan115/torrent.py": {
+      "sha": "2e91e5817ac7125a6789472fd6959fa37896a560",
+      "size": 2267
+    },
+    "mikan115/tracking_catalog.py": {
+      "sha": "b981ba575f744c12386747b83ad59b1ff887f61c",
+      "size": 3904
+    },
+    "mikan115/updater.py": {
+      "sha": "f81b66e3303683b22327ba7a9948b82ad8cf7790",
+      "size": 15712
+    },
+    "mikan115/workflow.py": {
+      "sha": "ba549476bfd70d47fa948c80924a5c648077adf8",
+      "size": 28789
+    },
+    "requirements.txt": {
+      "sha": "3d77201177d448b3aadf36527b64b33cac6763ad",
+      "size": 56
+    },
+    "run.py": {
+      "sha": "aa2f93d7073774df21a930171ef44350033a74d2",
+      "size": 321
+    },
+    "seed/ai-reviewed-links.json": {
+      "sha": "08824cce99c54a63d4545bd7c77e9f0dcae355ec",
+      "size": 940
+    },
+    "seed/bangumi-zh-hans.json": {
+      "sha": "eb090b7c0210acb6241bbb301099d6713b620b66",
+      "size": 120802
+    },
+    "seed/catalog.sqlite": {
+      "sha": "d2cd3d068e9c9cd1c5308a57f5bb4b0f8e5dd873",
+      "size": 53260288
+    },
+    "seed/tmdb-japanese-logos.json": {
+      "sha": "cf74dcc95bdd05a03d2e49c11b7b6db16334e4a3",
+      "size": 6528
+    },
+    "seed/tmdb-japanese-posters.json": {
+      "sha": "a3ffe6b2c84e3a6fa614e0866e14140a7b9c1354",
+      "size": 56
+    },
+    "seed/tmdb-logo-scopes.json": {
+      "sha": "8297e8bbe66465fc9ed84733ba798cea9c0fcc89",
+      "size": 47713
+    },
+    "seed/tmdb-original-titles.json": {
+      "sha": "df695c8230d09f3ed0365f4245855091058861fc",
+      "size": 190938
+    },
+    "static/assets/admin-viewport-fixes.css": {
+      "sha": "94c79a6a282b4558bbdfe60328a33b22aee7ca09",
+      "size": 1844
+    },
+    "static/assets/detail-interaction-fixes.css": {
+      "sha": "85d152bd80baac010ed823a95a202f4c23107f24",
+      "size": 923
+    },
+    "static/assets/index-B7Y-TVlk.css": {
+      "sha": "2747b37835e1960302d55effb7c1ba1702d3f18b",
+      "size": 83635
+    },
+    "static/assets/mikan115-app.js": {
+      "sha": "abb75468465d2139287d3c7e82bfa1387c367d0c",
+      "size": 221313
+    },
+    "static/mikan115-ui.js": {
+      "sha": "365baf3af09b7b0069005493c9590897d7d74087",
+      "size": 95843
+    },
+    "static/mikan115.css": {
+      "sha": "89e6c9f9d102ed327a18b6c6a32b424ed03d7292",
+      "size": 33337
+    },
+    "static/provider-logos/anilist.svg": {
+      "sha": "96360866f1eac59ab16baa8b5d36ea698677c4d8",
+      "size": 212
+    },
+    "static/provider-logos/bangumi-official.png": {
+      "sha": "5eb34551a9fe76b28092c3b158b3e9d22fe52bd5",
+      "size": 20117
+    },
+    "static/provider-logos/bangumi.svg": {
+      "sha": "833f69f063fe930a5a1d829502b1acc03dd6a750",
+      "size": 211
+    },
+    "static/provider-logos/imdb.svg": {
+      "sha": "30d12b34c7ee52d4693375032b38eefcb517c533",
+      "size": 205
+    },
+    "static/provider-logos/mal-official.svg": {
+      "sha": "b7a426208f698cc857ffc58e2fe083a7aa1944a8",
+      "size": 523
+    },
+    "static/provider-logos/mal.svg": {
+      "sha": "5c84f461115b9db22cb282aa85b4d37bae1a7e67",
+      "size": 203
+    },
+    "static/provider-logos/tmdb-official.svg": {
+      "sha": "62a660554855a7d76528be779dd1ac5a6a313362",
+      "size": 2577
+    },
+    "static/provider-logos/tmdb.svg": {
+      "sha": "36036ea0f94ebbe5ac98efa13ca11e9899b321eb",
+      "size": 205
+    },
+    "templates/index.html": {
+      "sha": "6cb43bfcf3c1024ea3ff656803096947c477c7b3",
+      "size": 1215
+    }
+  },
+  "protocol": 1,
+  "repository": "yywyao/anime-115",
+  "version": "5d5514b8eebe6d4eb1b9199d6c23a4d975277c70"
+}
