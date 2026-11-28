@@ -72,6 +72,13 @@ class SharedFollowing(Harness):
         sub=self.follow(title='wrong custom title');self.assertEqual(sub['title'],'测试动漫')
         self.assertEqual(sub['scope_key'],'tmdb:tv:77:s2');self.assertNotIn('https://',json.dumps(self.app.rss.list(self.user)))
 
+    def test_saved_external_group_uses_its_name_instead_of_internal_id(self):
+        self.payload=feed();source=self.app.rss.feeds.normalize('https://nyaa.si/')
+        group=self.app.rss.feeds.entries(source,self.payload)[0]['release']['group_id']
+        self.follow(rules={'group_ids':[group]})
+        public=self.app.rss.list(self.user)[0]
+        self.assertEqual(public['groups'],[{'id':group,'name':'Test'}])
+
     def test_home_and_other_rss_sources_share_durable_claims(self):
         sub=self.follow();self.payload=feed();self.app.rss.poll(sub)
         self.assertEqual(self.state.submit_count,1)

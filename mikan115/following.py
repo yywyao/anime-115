@@ -267,7 +267,9 @@ class RSS:
                 out['scope_key']=work_scope(self.catalog,work);out['title']=work.get('homeTitle') or work.get('title') or row['title']
             except AppError:pass
         names={group['group_id']:group['name'] for group in self.store.all('SELECT group_id,name FROM work_groups WHERE bangumi_id=?',(row['bangumi_id'],))}
-        out['groups']=[{'id':ident,'name':names.get(ident,'字幕组 '+ident)} for ident in out['rules']['group_ids']]
+        for group in self.store.all("SELECT DISTINCT json_extract(payload,'$.release.group_id') id,json_extract(payload,'$.release.group') name FROM subscription_releases WHERE subscription_id=? LIMIT 1000",(row['id'],)):
+            if group['id'] and group['name']:names.setdefault(group['id'],group['name'])
+        out['groups']=[{'id':ident,'name':names.get(ident,'未标注字幕组')} for ident in out['rules']['group_ids']]
         out['counts']={r['status']:r['n'] for r in self.store.all('SELECT status,count(*) n FROM subscription_releases WHERE subscription_id=? GROUP BY status',(row['id'],))}
         return out
 

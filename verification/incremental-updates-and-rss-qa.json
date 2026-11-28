@@ -43,7 +43,7 @@
     "mikan115/errors.py": "0d16ff3d29664623429e5e4ea2f66962765e6a6410afe38879a8f7d530d025a6",
     "mikan115/feed_matching.py": "c747619b8315e17b8f70a5c7ad19c321fba3209b7c14ee35f4483bd2b0d3b90d",
     "mikan115/feed_sources.py": "535aa3ce37c7af4db1670ca8cf3b37492766343130c88d093d8f76181f517400",
-    "mikan115/following.py": "6c6fbe99b69592ca5dd8df515aa01c97142f39e6dd7d60a9951bcdf79a1b0658",
+    "mikan115/following.py": "58b7155cd0b444f7aacd168c957b377e79e6a03041a97810c3fb8c3a2360e0df",
     "mikan115/http_client.py": "7624434c4bf47476720c0a491adeccf295c1c70592bb414deda339dded95c7a9",
     "mikan115/inventory.py": "8e3aca1c959c6cd8f3fd5442377a4b975ae1c6d537f429c974583f8640ab5b9d",
     "mikan115/library.py": "9a1bd7d02df4435afd391887118217c756f47b782a7ac7096b9d59d1c6e0f58a",
@@ -65,5 +65,21 @@
     "mikan115/tracking_catalog.py": "32a432c0801d4c4c91d315b34d1cf1a465f7275648957ebff99d55c0190706da",
     "mikan115/updater.py": "1e6fc8ec16e74a9d424b7de717387e4dc8a3da2cf450bfb090d71735b796f8a9",
     "mikan115/workflow.py": "4bf26a41865daabe0597e405536d5f05f636f6c41ad93de4c6d3f812b9adad06"
+  },
+  "windows_saved_rss_group_labels": 28,
+  "linux_saved_rss_group_labels": 11,
+  "published_update_check": {
+    "success": true,
+    "running_code_version": "5d5514b8eebe6d4eb1b9199d6c23a4d975277c70",
+    "source": "https://github.com/yywyao/anime-115",
+    "incremental_files_downloaded": 0,
+    "reused_files": 57,
+    "accounts_preserved": true,
+    "same_encrypted_cookie_and_key": true,
+    "existing_tasks_preserved": true,
+    "managed_connection_ready": true,
+    "supervisor_ready": true,
+    "new_cloud_tasks": 0,
+    "real_115_login": false
   }
 }
