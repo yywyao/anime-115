@@ -1,6 +1,9 @@
 {
-  "verified_utc": "2026-11-28T03:05:16.665102+00:00",
+  "verified_utc": "2026-11-28T03:13:06.486414+00:00",
   "windows_backend_tests": 173,
+  "linux_backend_tests": 173,
+  "default_compose_service_authentication": true,
+  "setup_token_redaction_regression": true,
   "browser": {
     "success": true,
     "scope": "Isolated local AList and Sonarr HTTP fixtures.",
@@ -11,6 +14,7 @@
           "height": 900
         },
         "automatic_services": true,
+        "automatic_startup_retry": true,
         "custom_settings": true,
         "restore_automatic": true,
         "secrets_absent_from_api_responses": true,
@@ -22,6 +26,7 @@
           "height": 844
         },
         "automatic_services": true,
+        "automatic_startup_retry": true,
         "custom_settings": true,
         "restore_automatic": true,
         "secrets_absent_from_api_responses": true,

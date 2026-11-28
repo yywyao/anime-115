@@ -10,10 +10,12 @@ export function ServiceSettings({service,onConnection}){
   const [password,setPassword]=useState('');
   const [token,setToken]=useState('');
   const [error,setError]=useState('');
+  const [loadError,setLoadError]=useState('');
   const [message,setMessage]=useState('');
   const [busy,setBusy]=useState(false);
 
   function apply(value){
+    setLoadError('');
     setStatus(value);
     setMode(value.mode||'automatic');
     setUrl(value.url||'');
@@ -22,10 +24,23 @@ export function ServiceSettings({service,onConnection}){
 
   useEffect(()=>{
     const controller=new AbortController();
-    api('/settings/'+service,{signal:controller.signal}).then(apply).catch(e=>{
-      if(e.name!=='AbortError')setError(e.message);
-    });
-    return()=>controller.abort();
+    let initial=true,timer=null;
+    async function load(){
+      try{
+        const value=await api('/settings/'+service,{signal:controller.signal});
+        if(controller.signal.aborted)return;
+        setLoadError('');
+        if(initial){apply(value);initial=false;}
+        else setStatus(value);
+        if(!value.ready)timer=setTimeout(load,8000);
+      }catch(e){
+        if(e.name==='AbortError')return;
+        setLoadError(e.message);
+        timer=setTimeout(load,8000);
+      }
+    }
+    load();
+    return()=>{controller.abort();if(timer)clearTimeout(timer);};
   },[service]);
 
   async function save(event){
@@ -93,7 +108,7 @@ export function ServiceSettings({service,onConnection}){
         <button type="button" className="secondary-button" disabled={busy||status===null} onClick={check}>检查连接</button>
       </div>
     </form>
-    {(error||status?.error)&&<p role="alert" className="m115-notice error">{error||status.error}</p>}
+    {(error||loadError||status?.error)&&<p role="alert" className="m115-notice error">{error||loadError||status.error}</p>}
     {message&&<p role="status" className="m115-notice">{message}</p>}
   </section>;
 }
