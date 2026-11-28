@@ -45,8 +45,8 @@
       "size": 11824
     },
     "mikan115/following.py": {
-      "sha": "4d0a6fb509dd106fa1b0665fb6827afc6c89ba5d",
-      "size": 37826
+      "sha": "ca6beb5e6a9f909ce5a9424fba26c050a481c5d6",
+      "size": 38139
     },
     "mikan115/http_client.py": {
       "sha": "e20c71a79376f8483a892040b4697e9ceb3b63ea",
@@ -231,5 +231,5 @@
   },
   "protocol": 1,
   "repository": "yywyao/anime-115",
-  "version": "5d5514b8eebe6d4eb1b9199d6c23a4d975277c70"
+  "version": "9e8d3fc664968b6af5a109de93e6c862a5afda47"
 }
